@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+}
+
+@theme {
+  --color-navy-950: #0b1329;
+  --color-navy-900: #0f172a;
+  --color-navy-800: #1e293b;
+  --color-navy-700: #334155;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-amber-400: #fbbf24;
+
+  --font-sans: "Manrope", sans-serif;
+}
+
+@layer components {
+  .admin-input {
+    @apply w-full rounded-xl border border-navy-700/60 bg-navy-800/80 px-4 py-2.5 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 focus:border-orange-500;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Manrope", sans-serif;
+}
+
+/* Hide browser-native password reveal/clear buttons (Edge, IE) */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
+/* Hide WebKit auto-fill/password buttons if they overlap with our custom toggles */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  right: 0 !important;
+}
+
+/* Shake animation for hotline button */
+@keyframes shake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-8deg); }
+  20%, 40%, 60%, 80% { transform: rotate(8deg); }
+}
+
+.animate-shake {
+  animation: shake 2s infinite ease-in-out;
+}
