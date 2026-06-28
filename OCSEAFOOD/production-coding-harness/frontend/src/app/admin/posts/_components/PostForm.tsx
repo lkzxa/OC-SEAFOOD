@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // Dynamically import react-quill-new to avoid SSR and React 19 findDOMNode issues
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+// Cast to any to allow ref forwarding (react-quill-new types don't expose ref in dynamic())
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
 import "react-quill-new/dist/quill.snow.css";
 
 interface PostFormProps {
