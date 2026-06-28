@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -32,8 +32,10 @@ const getStatusClass = (status: "PENDING" | "CONFIRMED" | "CANCELLED") => {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const orders = useOrderHistoryStore((state) => state.orders);
+  const addOrder = useOrderHistoryStore((state) => state.addOrder);
+  const [serverSynced, setServerSynced] = useState(false);
 
   const visibleOrders = useMemo(() => {
     if (!user) return [];
@@ -50,6 +52,58 @@ export default function ProfilePage() {
       router.push("/login?redirect=/profile");
     }
   }, [user, router]);
+
+  // BUG-C02 fix: Sync order history from server API for logged-in users
+  useEffect(() => {
+    if (!user || !token || serverSynced) return;
+
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch("/api/orders", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return; // Silently fail (e.g., not admin)
+        const data = await res.json();
+        const serverOrders = data?.data || [];
+        // Merge server orders into local store (no duplicates)
+        const localIds = new Set(orders.map((o) => o.id));
+        serverOrders.forEach((order: any) => {
+          if (!localIds.has(order.id)) {
+            addOrder({
+              id: order.id,
+              code: order.code,
+              userId: order.userId,
+              email: order.email,
+              fullName: order.fullName,
+              phone: order.phone,
+              province: order.province,
+              district: order.district,
+              ward: order.ward,
+              streetAddress: order.streetAddress,
+              note: order.note,
+              status: order.status,
+              totalFinal: Number(order.totalFinal),
+              totalItems: order.orderItems?.reduce((s: number, i: any) => s + i.quantity, 0) || 0,
+              items: (order.orderItems || []).map((i: any) => ({
+                productId: i.productId,
+                name: i.productName,
+                unit: i.productUnit,
+                quantity: i.quantity,
+                priceReference: Number(i.priceFinal),
+                image: "",
+              })),
+              createdAt: order.createdAt,
+            });
+          }
+        });
+        setServerSynced(true);
+      } catch {
+        // Silently fail - localStorage data still works
+      }
+    };
+
+    fetchOrders();
+  }, [user, token, serverSynced, orders, addOrder]);
 
   if (!user) {
     return (

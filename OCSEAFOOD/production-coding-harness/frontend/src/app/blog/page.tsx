@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MOCK_BLOG_POSTS } from "@/data/mockData";
 
 interface BlogPost {
   id: number;
@@ -14,15 +15,17 @@ interface BlogPost {
 
 async function getPosts(): Promise<BlogPost[]> {
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const res = await fetch(`${backendUrl}/posts`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
-    return await res.json();
+    if (!res.ok) return MOCK_BLOG_POSTS;
+    const data = await res.json();
+    const posts = Array.isArray(data) ? data : (data.data ?? []);
+    return posts.length > 0 ? posts : MOCK_BLOG_POSTS;
   } catch (err) {
     console.error("Failed to fetch blog posts:", err);
-    return [];
+    return MOCK_BLOG_POSTS;
   }
 }
 

@@ -17,9 +17,11 @@ interface AuthState {
 
 // Utility to set a cookie on the client side
 // cookieDays = 0 → session cookie (no expires), > 0 → persistent cookie
+// BUG-H03 fix: Only set Secure flag on HTTPS (not localhost)
 const setCookie = (name: string, value: string, days = 7) => {
   if (typeof window === 'undefined') return;
-  let cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax; Secure`;
+  const isSecure = window.location.protocol === 'https:';
+  let cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`;
   if (days > 0) {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
     cookie += `; expires=${expires}`;

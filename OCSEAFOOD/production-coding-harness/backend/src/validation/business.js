@@ -13,6 +13,7 @@ const ProductSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   slug: z.string().min(1, 'Slug is required').regex(SLUG_REGEX, 'Invalid slug format'),
   description: z.string().min(1, 'Description is required'),
+  detailDescription: z.string().optional().nullable(),
   image: z.string().min(1, 'Image is required'),
   unit: z.string().min(1, 'Unit is required'),
   priceReference: z.number().positive('Price reference must be positive').optional().nullable(),
@@ -28,6 +29,10 @@ const BlogPostSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   image: z.string().optional().nullable(),
   isVisible: z.boolean().default(true),
+  metaTitle: z.string().max(100, 'Meta title limit 100 chars').optional().nullable(),
+  metaDescription: z.string().max(255, 'Meta description limit 255 chars').optional().nullable(),
+  metaKeywords: z.string().optional().nullable(),
+  imageAlt: z.string().optional().nullable(),
 });
 
 module.exports = {

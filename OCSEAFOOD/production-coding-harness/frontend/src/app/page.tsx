@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import AnnouncementModal from "@/components/AnnouncementModal";
+import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "@/data/mockData";
 
 interface Category {
   id: number;
@@ -24,31 +25,35 @@ interface Product {
 
 async function getCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/categories`, {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const res = await fetch(`${backendUrl}/categories`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) return MOCK_CATEGORIES;
     const json = await res.json();
     // API returns { data: [...], pagination: {...} }
-    return Array.isArray(json) ? json : (json.data ?? []);
+    const data = Array.isArray(json) ? json : (json.data ?? []);
+    return data.length > 0 ? data : MOCK_CATEGORIES;
   } catch (err) {
     console.error("Failed to fetch categories:", err);
-    return [];
+    return MOCK_CATEGORIES;
   }
 }
 
 async function getProducts(): Promise<Product[]> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/products`, {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const res = await fetch(`${backendUrl}/products`, {
       next: { revalidate: 60 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) return MOCK_PRODUCTS;
     const json = await res.json();
     // API returns { data: [...], pagination: {...} }
-    return Array.isArray(json) ? json : (json.data ?? []);
+    const data = Array.isArray(json) ? json : (json.data ?? []);
+    return data.length > 0 ? data : MOCK_PRODUCTS;
   } catch (err) {
     console.error("Failed to fetch products:", err);
-    return [];
+    return MOCK_PRODUCTS;
   }
 }
 
@@ -59,7 +64,8 @@ interface PublicSettings {
 
 async function getPublicSettings(): Promise<PublicSettings> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'}/settings/public`, {
+    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const res = await fetch(`${backendUrl}/settings/public`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return { HOMEPAGE_ANNOUNCEMENT_ENABLED: false, HOMEPAGE_ANNOUNCEMENT_CONTENT: "" };
@@ -125,7 +131,7 @@ export default async function Home() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent flex flex-col justify-end p-8 md:p-12">
               <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tight uppercase text-white leading-tight">
-                Hải Sản Nhập Khẩu <br />
+                HẢI SẢN <br />
                 <span className="text-orange-500">Thượng Hạng</span>
               </h1>
               <p className="text-slate-300 mb-6 max-w-xl hidden md:block">
@@ -199,9 +205,9 @@ export default async function Home() {
         );
       })}
 
-      <AnnouncementModal 
-        enabled={publicSettings.HOMEPAGE_ANNOUNCEMENT_ENABLED} 
-        content={publicSettings.HOMEPAGE_ANNOUNCEMENT_CONTENT} 
+      <AnnouncementModal
+        enabled={publicSettings.HOMEPAGE_ANNOUNCEMENT_ENABLED}
+        content={publicSettings.HOMEPAGE_ANNOUNCEMENT_CONTENT}
       />
     </div>
   );

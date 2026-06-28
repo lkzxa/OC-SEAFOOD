@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
+import ImageUploader from "@/components/admin/ImageUploader";
 import { useAuthStore } from "@/store/useAuthStore";
+import dynamic from "next/dynamic";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+import "react-quill-new/dist/quill.snow.css";
 
 interface Category {
   id: number;
@@ -23,6 +28,7 @@ interface Product {
   isVisible: boolean;
   categoryId: number;
   weightOptions?: string[];
+  detailDescription?: string;
 }
 
 const emptyForm = {
@@ -36,6 +42,7 @@ const emptyForm = {
   isVisible: true,
   categoryId: "",
   weightOptionsStr: "",
+  detailDescription: "",
 };
 
 const formatCurrency = (value: number | string | null) => {
@@ -62,6 +69,58 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [optionRows, setOptionRows] = useState<{ name: string; price: string }[]>([]);
+  const quillRef = useRef<any>(null);
+
+  const modules = useMemo(() => {
+    return {
+      toolbar: {
+        container: [
+          [{ header: [2, 3, 4, false] }],
+          ["bold", "italic", "underline", "strike"],
+          [{ align: [] }],
+          [{ list: "ordered" }, { list: "bullet" }],
+          ["link", "image"],
+          ["clean"],
+        ],
+        handlers: {
+          image: function() {
+            const input = document.createElement("input");
+            input.setAttribute("type", "file");
+            input.setAttribute("accept", "image/*");
+            input.click();
+
+            input.onchange = async () => {
+              const file = input.files ? input.files[0] : null;
+              if (!file) return;
+
+              const formData = new FormData();
+              formData.append("image", file);
+              const currentToken = useAuthStore.getState().token;
+
+              try {
+                const res = await fetch("/api/upload", {
+                  method: "POST",
+                  headers: { ...getAuthHeaders(currentToken) },
+                  body: formData,
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error?.message || "Upload failed");
+
+                const quill = quillRef.current?.getEditor();
+                if (quill) {
+                  const range = quill.getSelection(true);
+                  quill.insertEmbed(range.index, "image", data.url);
+                  quill.setSelection(range.index + 1);
+                }
+              } catch (err) {
+                alert("Lỗi tải ảnh: " + (err instanceof Error ? err.message : "Đã xảy ra lỗi"));
+              }
+            };
+          }
+        }
+      }
+    };
+  }, []);
 
   const editingProduct = useMemo(
     () => products.find((product) => product.id === editingId) || null,
@@ -118,6 +177,7 @@ export default function AdminProductsPage() {
       isVisible: editingProduct.isVisible,
       categoryId: String(editingProduct.categoryId),
       weightOptionsStr: "",
+      detailDescription: editingProduct.detailDescription || "",
     });
 
     if (editingProduct.weightOptions && editingProduct.weightOptions.length > 0) {
@@ -166,6 +226,7 @@ export default function AdminProductsPage() {
       isVisible: form.isVisible,
       categoryId: Number(form.categoryId),
       weightOptions,
+      detailDescription: form.detailDescription.trim() || null,
     };
 
     const hasOptionPrice = optionRows.some((row) => row.name.trim() !== "" && Number(row.price) > 0);
@@ -292,14 +353,34 @@ export default function AdminProductsPage() {
               />
             </Field>
             <Field label="Slug" required>
-              <input
-                value={form.slug}
-                onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
-                className="admin-input"
-                disabled={saving}
-                placeholder="cua-hoang-de"
-                required
-              />
+              <div className="relative">
+                <input
+                  value={form.slug}
+                  onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value }))}
+                  className="admin-input pr-10"
+                  disabled={saving}
+                  placeholder="cua-hoang-de"
+                  required
+                />
+                {/* BUG-L05 fix: Auto-generate slug from product name */}
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  title="Tự động tạo từ tên sản phẩm"
+                  onClick={() => {
+                    const generated = form.name
+                      .toLowerCase()
+                      .normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .replace(/đ/g, "d")
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-+|-+$/g, "");
+                    setForm((p) => ({ ...p, slug: generated }));
+                  }}
+                >
+                  <span className="material-symbols-outlined text-sm">magic_button</span>
+                </button>
+              </div>
             </Field>
             <Field label="Mô tả" required>
               <textarea
@@ -312,14 +393,27 @@ export default function AdminProductsPage() {
                 required
               />
             </Field>
+            
+            <Field label="Mô tả chi tiết (Rich Text)">
+              <div className="bg-white text-black rounded-xl overflow-hidden mt-2">
+                <ReactQuill 
+                  ref={quillRef}
+                  theme="snow" 
+                  value={form.detailDescription} 
+                  onChange={(val) => setForm((prev) => ({ ...prev, detailDescription: val }))}
+                  modules={modules}
+                  className="min-h-[200px]"
+                  readOnly={saving}
+                />
+              </div>
+            </Field>
+
             <Field label="Ảnh (URL)" required>
-              <input
-                value={form.image}
-                onChange={(e) => setForm((prev) => ({ ...prev, image: e.target.value }))}
-                className="admin-input"
+              <ImageUploader 
+                value={form.image} 
+                onChange={(url) => setForm((prev) => ({ ...prev, image: url }))} 
                 disabled={saving}
-                placeholder="/images/cua.jpg hoặc URL ảnh"
-                required
+                placeholder="/images/cua.jpg hoặc Tải lên..."
               />
             </Field>
             

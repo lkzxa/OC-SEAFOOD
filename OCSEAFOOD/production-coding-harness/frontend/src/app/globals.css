@@ -54,3 +54,23 @@ input::-webkit-credentials-auto-fill-button {
 .animate-shake {
   animation: shake 2s infinite ease-in-out;
 }
+
+/* Floating +1 animation */
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+}
+
+.animate-float-up {
+  animation: floatUp 0.8s ease-out forwards;
+}
+
+/* Cart icon bounce/ping animation */
+@keyframes cartBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); color: var(--color-orange-500); }
+}
+
+.animate-cart-bounce {
+  animation: cartBounce 0.5s ease-in-out;
+}

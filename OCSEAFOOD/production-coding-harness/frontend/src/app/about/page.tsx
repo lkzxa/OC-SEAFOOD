@@ -4,7 +4,7 @@ export default function AboutPage() {
       {/* HEADER SECTION */}
       <section className="text-center space-y-4 max-w-3xl mx-auto">
         <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-slate-100">
-          Về <span className="text-orange-500">OCSEAFOOD</span>
+          Về <span className="text-orange-500">ỐC SEAFOOD</span>
         </h1>
         <p className="text-slate-400 text-sm md:text-base leading-relaxed">
           Thương hiệu hải sản nhập khẩu và tươi sống cao cấp hàng đầu Việt Nam, mang tinh hoa ẩm thực đại dương tươi ngon nhất đến từng bàn ăn Việt.
@@ -18,10 +18,10 @@ export default function AboutPage() {
             <span className="w-1.5 h-7 bg-orange-500"></span> Câu Chuyện Thương Hiệu
           </h2>
           <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-            Được thành lập từ tình yêu sâu sắc với ẩm thực biển khơi và mong muốn nâng tầm bữa ăn gia đình Việt, OCSEAFOOD đã không ngừng nỗ lực tìm kiếm, liên kết với những ngư trường lớn nhất trên thế giới. 
+            Được thành lập từ tình yêu sâu sắc với ẩm thực biển khơi và mong muốn nâng tầm bữa ăn gia đình Việt, OC SEAFOOD đã không ngừng nỗ lực tìm kiếm, liên kết với những ngư trường lớn nhất trên thế giới.
           </p>
           <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-            Chúng tôi tự hào mang đến các dòng sản phẩm hải sản nhập khẩu chất lượng Loại 1 như Cua hoàng đế King Crab, Tôm hùm Alaska, Bào ngư Hàn Quốc và Sashimi chuẩn Nhật. Mỗi sản phẩm tại OCSEAFOOD đều được sàng lọc khắt khe từ khâu đánh bắt, đóng gói, bảo quản nhiệt độ chuẩn quốc tế cho đến khâu giao tận tay khách hàng.
+            Chúng tôi tự hào mang đến các dòng sản phẩm hải sản nhập khẩu chất lượng Loại 1 như Cua hoàng đế King Crab, Tôm hùm Alaska, Bào ngư Hàn Quốc và Sashimi chuẩn Nhật. Mỗi sản phẩm tại ỐC SEAFOOD đều được sàng lọc khắt khe từ khâu đánh bắt, đóng gói, bảo quản nhiệt độ chuẩn quốc tế cho đến khâu giao tận tay khách hàng.
           </p>
         </div>
         <div className="aspect-video lg:aspect-square rounded-lg overflow-hidden bg-navy-900 border border-navy-700">
@@ -105,7 +105,7 @@ export default function AboutPage() {
             Chính Sách & Hướng Dẫn
           </h2>
           <p className="text-slate-400 text-sm">
-            Thông tin chi tiết về chính sách hoạt động, mua hàng và cam kết dịch vụ của OCSEAFOOD.
+            Thông tin chi tiết về chính sách hoạt động, mua hàng và cam kết dịch vụ của ỐC SEAFOOD.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default function AboutPage() {
             </h3>
             <div className="text-slate-300 text-sm leading-relaxed space-y-2">
               <p>
-                Bảo vệ thông tin cá nhân của khách hàng là ưu tiên hàng đầu tại OCSEAFOOD. Chúng tôi cam kết:
+                Bảo vệ thông tin cá nhân của khách hàng là ưu tiên hàng đầu tại ỐC SEAFOOD. Chúng tôi cam kết:
               </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Thu thập thông tin:</strong> Chỉ thu thập thông tin cơ bản phục vụ cho việc liên hệ đặt hàng, vận chuyển và gửi các voucher quà tặng khuyến mãi (bao gồm: Họ tên, Số điện thoại, Email, Địa chỉ).</li>
@@ -173,7 +173,7 @@ export default function AboutPage() {
             </h3>
             <div className="text-slate-300 text-sm leading-relaxed space-y-2">
               <p>
-                Để bảo toàn độ tươi sống tuyệt hảo của hải sản, OCSEAFOOD áp dụng quy trình vận chuyển chuyên nghiệp:
+                Để bảo toàn độ tươi sống tuyệt hảo của hải sản, ỐC SEAFOOD áp dụng quy trình vận chuyển chuyên nghiệp:
               </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Phương thức giao hàng:</strong> Sử dụng xe máy và ô tô chuyên dụng trang bị thùng giữ nhiệt lạnh chuẩn bảo quản thủy hải sản tươi sống.</li>

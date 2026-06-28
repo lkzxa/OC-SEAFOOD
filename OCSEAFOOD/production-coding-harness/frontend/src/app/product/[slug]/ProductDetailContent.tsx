@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/components/ProductCard";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 interface Category {
   id: number;
@@ -25,6 +26,7 @@ interface Product {
   categoryId: number;
   category: Category;
   weightOptions?: string[];
+  detailDescription?: string;
 }
 
 interface ProductDetailContentProps {
@@ -421,12 +423,22 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
         <div className="text-sm text-slate-300 leading-relaxed font-medium space-y-4">
           {activeTab === "description" && (
             <div className="space-y-4">
-              <p>
-                Hải sản tươi sống của hệ thống <strong>OCSEAFOOD</strong> được đánh bắt trực tiếp từ những ngư trường lớn nhất tại Nha Trang, Phú Quốc, Phan Thiết. Hải sản được lựa chọn kỹ càng theo từng đợt tàu, đảm bảo size đều, khỏe mạnh và chắc thịt trước khi đưa vào hệ thống bể oxy nhân tạo tiêu chuẩn châu Âu để phục vụ quý khách.
-              </p>
-              <p>
-                Thịt hải sản sống chứa lượng chất dinh dưỡng vô cùng phong phú, chứa nhiều Omega-3 tốt cho sức khỏe tim mạch, giàu chất đạm tự nhiên dễ hấp thụ cùng các khoáng chất vi lượng thiết yếu như Kẽm, Canxi, Phốt pho, Sắt. Sản phẩm là món ăn bồi bổ sức khỏe tuyệt vời cho mọi thành viên trong gia đình.
-              </p>
+              {product.detailDescription ? (
+                <div 
+                  className="prose prose-invert prose-orange max-w-none text-slate-300 [&>p]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_img]:rounded-xl [&_img]:shadow-lg"
+                  // BUG-H01 fix: sanitize HTML to prevent XSS attacks
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.detailDescription) }} 
+                />
+              ) : (
+                <>
+                  <p>
+                    Hải sản tươi sống của hệ thống <strong>OCSEAFOOD</strong> được đánh bắt trực tiếp từ những ngư trường lớn nhất tại Nha Trang, Phú Quốc, Phan Thiết. Hải sản được lựa chọn kỹ càng theo từng đợt tàu, đảm bảo size đều, khỏe mạnh và chắc thịt trước khi đưa vào hệ thống bể oxy nhân tạo tiêu chuẩn châu Âu để phục vụ quý khách.
+                  </p>
+                  <p>
+                    Thịt hải sản sống chứa lượng chất dinh dưỡng vô cùng phong phú, chứa nhiều Omega-3 tốt cho sức khỏe tim mạch, giàu chất đạm tự nhiên dễ hấp thụ cùng các khoáng chất vi lượng thiết yếu như Kẽm, Canxi, Phốt pho, Sắt. Sản phẩm là món ăn bồi bổ sức khỏe tuyệt vời cho mọi thành viên trong gia đình.
+                  </p>
+                </>
+              )}
             </div>
           )}
 

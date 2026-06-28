@@ -457,8 +457,9 @@ function LoginContent() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Số điện thoại (Tùy chọn)
+                    Số điện thoại <span className="text-slate-600 normal-case font-normal">(Tùy chọn - dùng khi đặt hàng)</span>
                   </label>
+                  {/* BUG-M07 note: phone is not stored in user DB, only used for order validation */}
                   <div className="flex items-center bg-navy-800/80 border border-navy-700/60 rounded-xl px-4 py-1.5 focus-within:border-orange-500 transition-colors">
                     <span className="material-symbols-outlined text-slate-400 select-none text-xl">call</span>
                     <input
@@ -470,6 +471,7 @@ function LoginContent() {
                       disabled={loading}
                     />
                   </div>
+                  <p className="text-[10px] text-slate-500 leading-normal">* Số điện thoại chỉ dùng để xác thực khi đặt hàng, không lưu vào tài khoản.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -537,11 +539,12 @@ function LoginContent() {
 
               <p className="text-center text-[10px] text-slate-400 leading-normal pt-2">
                 Bằng việc tiếp tục, bạn đồng ý với các{" "}
-                <a href="#" className="text-orange-400 hover:underline">
+                {/* BUG-L02 fix: Thay # bằng link có ý nghĩa */}
+                <a href="/about" className="text-orange-400 hover:underline">
                   Điều khoản Dịch vụ
                 </a>{" "}
                 &{" "}
-                <a href="#" className="text-orange-400 hover:underline">
+                <a href="/about" className="text-orange-400 hover:underline">
                   Chính sách Bảo mật
                 </a>{" "}
                 của OCSEAFOOD.

@@ -4,9 +4,10 @@ const prisma = require('../config/prisma');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { signToken } = require('../utils/jwt');
 const { RegisterSchema, LoginSchema } = require('../validation/auth');
+const { authRateLimiter } = require('../middleware/rateLimiter');
 
-// POST /auth/register - Register a new user
-router.post('/register', async (req, res, next) => {
+// POST /auth/register - Register a new user (BUG-C03 fix: rate limited)
+router.post('/register', authRateLimiter, async (req, res, next) => {
   try {
     const parsed = RegisterSchema.safeParse(req.body);
     if (!parsed.success) {

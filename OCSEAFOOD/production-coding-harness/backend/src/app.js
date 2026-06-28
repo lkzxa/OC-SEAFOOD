@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const { z } = require('zod');
 const errorHandler = require('./middleware/errorHandler');
@@ -16,6 +17,7 @@ const orderRoutes = require('./routes/orders');
 const settingsRoutes = require('./routes/settings');
 const usersRoutes = require('./routes/users');
 const recruitmentRoutes = require('./routes/recruitment');
+const uploadRoutes = require('./routes/upload');
 const app = express();
 
 // BUG-016 fix: CORS configuration
@@ -48,53 +50,60 @@ app.use('/orders', orderRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/users', usersRoutes);
 app.use('/recruitment', recruitmentRoutes);
+app.use('/upload', uploadRoutes);
+
+// Phục vụ thư mục uploads ra public
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Test error endpoint (dev/test only)
-app.get('/test-error', (req, res, next) => {
-  const error = new Error('This is a test server error');
-  error.status = 500;
-  next(error);
-});
+// BUG-L03 fix: Debug/test endpoints only available in non-production environments
+if (process.env.NODE_ENV !== 'production') {
+  // Test error endpoint
+  app.get('/test-error', (req, res, next) => {
+    const error = new Error('This is a test server error');
+    error.status = 500;
+    next(error);
+  });
 
-// Test authentication endpoint (dev/test only)
-app.get('/test-auth', auth, (req, res) => {
-  res.status(200).json({ user: req.user });
-});
+  // Test authentication endpoint
+  app.get('/test-auth', auth, (req, res) => {
+    res.status(200).json({ user: req.user });
+  });
 
-// Test authorization endpoint for ADMIN only (dev/test only)
-app.get('/test-admin', auth, authorize('ADMIN'), (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Admin access granted' });
-});
+  // Test authorization endpoint for ADMIN only
+  app.get('/test-admin', auth, authorize('ADMIN'), (req, res) => {
+    res.status(200).json({ status: 'success', message: 'Admin access granted' });
+  });
 
-// Test authorization endpoint for CUSTOMER and ADMIN (dev/test only)
-app.get('/test-customer', auth, authorize('CUSTOMER', 'ADMIN'), (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Customer access granted' });
-});
+  // Test authorization endpoint for CUSTOMER and ADMIN
+  app.get('/test-customer', auth, authorize('CUSTOMER', 'ADMIN'), (req, res) => {
+    res.status(200).json({ status: 'success', message: 'Customer access granted' });
+  });
 
-// Test validation endpoint for phone number (dev/test only)
-app.post('/test-validate-phone', validateBody(z.object({ phone: vietnamesePhone })), (req, res) => {
-  res.status(200).json({ status: 'success', phone: req.body.phone });
-});
+  // Test validation endpoint for phone number
+  app.post('/test-validate-phone', validateBody(z.object({ phone: vietnamesePhone })), (req, res) => {
+    res.status(200).json({ status: 'success', phone: req.body.phone });
+  });
 
-// Test validation endpoint for 3-level address (dev/test only)
-app.post('/test-validate-address', validateBody(z.object({ address: threeLevelAddress })), (req, res) => {
-  res.status(200).json({ status: 'success', address: req.body.address });
-});
+  // Test validation endpoint for 3-level address
+  app.post('/test-validate-address', validateBody(z.object({ address: threeLevelAddress })), (req, res) => {
+    res.status(200).json({ status: 'success', address: req.body.address });
+  });
 
-// Test rate limiting endpoint for authentication (dev/test only)
-app.post('/test-rate-limit-auth', testAuthRateLimiter, (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Auth endpoint reached' });
-});
+  // Test rate limiting endpoint for authentication
+  app.post('/test-rate-limit-auth', testAuthRateLimiter, (req, res) => {
+    res.status(200).json({ status: 'success', message: 'Auth endpoint reached' });
+  });
 
-// Test rate limiting endpoint for checkout (dev/test only)
-app.post('/test-rate-limit-checkout', testCheckoutRateLimiter, (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Checkout endpoint reached' });
-});
+  // Test rate limiting endpoint for checkout
+  app.post('/test-rate-limit-checkout', testCheckoutRateLimiter, (req, res) => {
+    res.status(200).json({ status: 'success', message: 'Checkout endpoint reached' });
+  });
+}
 
 // Centralized error handler (must be registered last)
 app.use(errorHandler);

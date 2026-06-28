@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
+import { removeVietnameseTones } from "@/utils/stringUtils";
 
 interface Category {
   id: number;
@@ -127,13 +128,14 @@ function MenuContent() {
   };
 
   // Apply search filter client-side
+  const normalizedSearchParam = removeVietnameseTones(searchParam);
   const visibleProducts = products
     .filter((p) => p.isVisible)
-    .filter((p) =>
-      searchParam
-        ? p.name.toLowerCase().includes(searchParam.toLowerCase())
-        : true
-    );
+    .filter((p) => {
+      if (!searchParam) return true;
+      const normalizedName = removeVietnameseTones(p.name);
+      return normalizedName.includes(normalizedSearchParam);
+    });
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-8">
@@ -146,6 +148,26 @@ function MenuContent() {
           Khám phá thế giới hải sản tươi sống chất lượng cao được tuyển chọn kỹ lưỡng, giao tận nơi trong ngày.
         </p>
       </div>
+
+      {/* SEARCH RESULTS FEEDBACK */}
+      {searchParam && (
+        <div className="mb-6 bg-navy-800 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)] p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p className="text-slate-300">
+            Kết quả tìm kiếm cho: <strong className="text-orange-500">"{searchParam}"</strong> 
+            <span className="text-slate-400 ml-2">({visibleProducts.length} sản phẩm)</span>
+          </p>
+          <button 
+            onClick={() => {
+              const url = selectedCategoryId ? `/menu?categoryId=${selectedCategoryId}` : '/menu';
+              router.push(url);
+            }}
+            className="text-xs font-bold text-slate-400 hover:text-white transition-colors bg-navy-700 hover:bg-navy-600 px-4 py-2 rounded-md flex items-center justify-center gap-1.5 cursor-pointer w-fit"
+          >
+            <span className="material-symbols-outlined text-[14px]">close</span>
+            Xóa tìm kiếm
+          </button>
+        </div>
+      )}
 
       {/* CATEGORY TABS */}
       <div className="mb-10">
@@ -208,9 +230,13 @@ function MenuContent() {
       ) : (
         <div className="text-center py-20 bg-navy-800 rounded-lg border border-navy-700/50">
           <span className="material-symbols-outlined text-5xl text-slate-500 mb-4 select-none">
-            inbox
+            {searchParam ? "search_off" : "inbox"}
           </span>
-          <p className="text-slate-400 font-medium">Không tìm thấy sản phẩm nào trong danh mục này.</p>
+          <p className="text-slate-400 font-medium text-lg">
+            {searchParam 
+              ? `Không tìm thấy hải sản nào khớp với từ khóa "${searchParam}".`
+              : "Không tìm thấy sản phẩm nào trong danh mục này."}
+          </p>
         </div>
       )}
     </div>

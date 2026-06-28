@@ -322,7 +322,18 @@ export default function CartPage() {
                       src={item.image}
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg border border-navy-700 bg-navy-900"
+                      // BUG-L04 fix: Fallback khi ảnh bị lỗi/404
+                      onError={(e) => {
+                        e.currentTarget.src = '';
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
                     />
+                    {/* BUG-L04 fix: Fallback icon khi ảnh bị lỗi, ẩn mặc định */}
+                    <div className="hidden w-16 h-16 rounded-lg border border-navy-700 bg-navy-900 items-center justify-center text-slate-500 shrink-0">
+                      <span className="material-symbols-outlined text-2xl">image_not_supported</span>
+                    </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-bold text-slate-200 truncate">{item.name}</h3>
                       <div className="flex items-center flex-wrap gap-2 mt-0.5">

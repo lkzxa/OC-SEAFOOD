@@ -17,7 +17,9 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
     const skip = (page - 1) * pageSize;
 
     const where = {};
-    if (req.query.status) {
+    // BUG-H02 fix: Validate status enum to prevent invalid Prisma query
+    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED'];
+    if (req.query.status && VALID_STATUSES.includes(req.query.status)) {
       where.status = req.query.status;
     }
     if (req.query.phone) {
@@ -56,6 +58,10 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
 router.get('/:id', auth, async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
+    // BUG-M02 fix: Validate ID is a valid number before querying
+    if (isNaN(id)) {
+      return res.status(400).json({ error: { message: 'Invalid order ID', status: 400 } });
+    }
     const order = await prisma.order.findUnique({
       where: { id },
       include: { orderItems: true }

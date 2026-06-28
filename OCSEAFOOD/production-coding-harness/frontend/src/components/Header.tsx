@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -15,6 +15,7 @@ export default function Header() {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, clearAuth } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   // BUG-010: ref for click-outside detection
@@ -37,6 +38,19 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isUserDropdownOpen]);
 
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevTotalItems = useRef(totalItems);
+
+  useEffect(() => {
+    if (totalItems > prevTotalItems.current) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 500);
+      prevTotalItems.current = totalItems;
+      return () => clearTimeout(timer);
+    }
+    prevTotalItems.current = totalItems;
+  }, [totalItems]);
+
   const handleLogout = () => {
     clearAuth();
     setIsUserDropdownOpen(false);
@@ -50,9 +64,28 @@ export default function Header() {
     if (q) {
       router.push(`/menu?search=${encodeURIComponent(q)}`);
       setIsMobileMenuOpen(false);
-      setSearchQuery("");
+    } else {
+      router.push(`/menu`);
+      setIsMobileMenuOpen(false);
     }
   };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    if (pathname === '/menu') {
+      router.push('/menu');
+    }
+  };
+
+  // Sync search input with URL if it changes externally
+  useEffect(() => {
+    if (pathname === '/menu') {
+      const q = searchParams.get('search');
+      setSearchQuery(q || "");
+    } else {
+      setSearchQuery("");
+    }
+  }, [pathname, searchParams]);
 
   const isActive = (path: string) => {
     if (!pathname) return path === "/";
@@ -79,7 +112,7 @@ export default function Header() {
             </button>
             <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
               {/* Khối bọc logo: Tăng kích thước từ h-12 w-12 lên h-14 w-14 để tạo không gian rộng hơn */}
-              <div className="h-14 w-14 flex items-center justify-center overflow-visible select-none">
+              <div className="h-16 w-16 flex items-center justify-center overflow-visible select-none">
                 <img
                   src="/logo.png"
                   alt="ỐC SEAFOOD Logo"
@@ -88,7 +121,7 @@ export default function Header() {
                     - scale-[1.3]: Phóng to toàn bộ logo lên thêm 30% một cách tự nhiên.
                     - origin-center: Giữ tâm logo cố định, không làm xô lệch text hay nút menu xung quanh.
                   */
-                  className="h-full w-full object-contain scale-[1.3] origin-center drop-shadow-md"
+                  className="h-full w-full object-contain scale-[1.6] origin-center drop-shadow-md"
                 />
               </div>
               {/* Chữ text thương hiệu: Thêm pl-2 để bù lại khoảng không do logo phóng to tràn ra */}
@@ -102,12 +135,22 @@ export default function Header() {
           <div className="flex-1 max-w-xl hidden md:flex relative group">
             <form onSubmit={handleSearch} className="w-full flex relative">
               <input
-                className="w-full bg-white/95 border-none rounded-full py-2 px-5 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-navy-600 transition-all outline-none shadow-inner"
+                className="w-full bg-white/95 border-none rounded-full py-2 px-5 pr-10 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-navy-600 transition-all outline-none shadow-inner"
                 placeholder="Tìm kiếm hải sản..."
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors p-1"
+                  aria-label="Xóa tìm kiếm"
+                >
+                  <span className="material-symbols-outlined select-none text-[18px]">close</span>
+                </button>
+              )}
               <button
                 type="submit"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-navy-600 transition-colors"
@@ -179,7 +222,7 @@ export default function Header() {
 
             {/* Badge Giỏ hàng được neo chuẩn vị trí tuyệt đối - không làm xô lệch text */}
             <Link href="/cart" className="relative flex flex-col items-center text-navy-950 hover:text-navy-800 transition-colors">
-              <div className="relative">
+              <div className={`relative ${isAnimating ? 'animate-cart-bounce' : ''}`}>
                 <span className="material-symbols-outlined select-none text-[22px]">shopping_cart</span>
                 <span
                   aria-label={`Giỏ hàng có ${totalItems} sản phẩm`}
@@ -220,12 +263,21 @@ export default function Header() {
         <div className="md:hidden bg-navy-800 border-t border-navy-700 py-4 px-6 flex flex-col gap-4">
           <form onSubmit={handleSearch} className="w-full relative">
             <input
-              className="w-full bg-navy-900 border-none rounded-full py-2 px-5 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 transition-all outline-none"
+              className="w-full bg-navy-900 border-none rounded-full py-2 px-5 pr-10 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 transition-all outline-none"
               placeholder="Tìm kiếm hải sản..."
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={handleClearSearch}
+                className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-400 p-1"
+              >
+                <span className="material-symbols-outlined select-none text-[18px]">close</span>
+              </button>
+            )}
             <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
               <span className="material-symbols-outlined select-none">search</span>
             </button>
