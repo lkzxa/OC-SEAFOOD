@@ -24,35 +24,35 @@ interface Product {
 }
 
 async function getCategories(): Promise<Category[]> {
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  // Không có backend URL → dùng mock data ngay (Vercel preview mode)
+  if (!backendUrl) return MOCK_CATEGORIES;
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const res = await fetch(`${backendUrl}/categories`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return MOCK_CATEGORIES;
     const json = await res.json();
-    // API returns { data: [...], pagination: {...} }
     const data = Array.isArray(json) ? json : (json.data ?? []);
     return data.length > 0 ? data : MOCK_CATEGORIES;
-  } catch (err) {
-    console.error("Failed to fetch categories:", err);
+  } catch {
     return MOCK_CATEGORIES;
   }
 }
 
 async function getProducts(): Promise<Product[]> {
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  // Không có backend URL → dùng mock data ngay (Vercel preview mode)
+  if (!backendUrl) return MOCK_PRODUCTS;
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const res = await fetch(`${backendUrl}/products`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return MOCK_PRODUCTS;
     const json = await res.json();
-    // API returns { data: [...], pagination: {...} }
     const data = Array.isArray(json) ? json : (json.data ?? []);
     return data.length > 0 ? data : MOCK_PRODUCTS;
-  } catch (err) {
-    console.error("Failed to fetch products:", err);
+  } catch {
     return MOCK_PRODUCTS;
   }
 }
@@ -63,15 +63,15 @@ interface PublicSettings {
 }
 
 async function getPublicSettings(): Promise<PublicSettings> {
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) return { HOMEPAGE_ANNOUNCEMENT_ENABLED: false, HOMEPAGE_ANNOUNCEMENT_CONTENT: "" };
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const res = await fetch(`${backendUrl}/settings/public`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return { HOMEPAGE_ANNOUNCEMENT_ENABLED: false, HOMEPAGE_ANNOUNCEMENT_CONTENT: "" };
     return await res.json();
-  } catch (err) {
-    console.error("Failed to fetch public settings:", err);
+  } catch {
     return { HOMEPAGE_ANNOUNCEMENT_ENABLED: false, HOMEPAGE_ANNOUNCEMENT_CONTENT: "" };
   }
 }

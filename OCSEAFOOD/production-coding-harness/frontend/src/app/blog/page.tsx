@@ -14,8 +14,9 @@ interface BlogPost {
 }
 
 async function getPosts(): Promise<BlogPost[]> {
+  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+  if (!backendUrl) return MOCK_BLOG_POSTS;
   try {
-    const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const res = await fetch(`${backendUrl}/posts`, {
       next: { revalidate: 60 },
     });
@@ -23,8 +24,7 @@ async function getPosts(): Promise<BlogPost[]> {
     const data = await res.json();
     const posts = Array.isArray(data) ? data : (data.data ?? []);
     return posts.length > 0 ? posts : MOCK_BLOG_POSTS;
-  } catch (err) {
-    console.error("Failed to fetch blog posts:", err);
+  } catch {
     return MOCK_BLOG_POSTS;
   }
 }
