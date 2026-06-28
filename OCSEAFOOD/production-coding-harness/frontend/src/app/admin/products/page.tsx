@@ -401,7 +401,7 @@ export default function AdminProductsPage() {
                   ref={quillRef}
                   theme="snow" 
                   value={form.detailDescription} 
-                  onChange={(val) => setForm((prev) => ({ ...prev, detailDescription: val }))}
+                  onChange={(val: string) => setForm((prev) => ({ ...prev, detailDescription: val }))}
                   modules={modules}
                   className="min-h-[200px]"
                   readOnly={saving}

@@ -261,7 +261,7 @@ export default function PostForm({ isEditing, postId }: PostFormProps) {
                     ref={quillRef}
                     theme="snow" 
                     value={form.content} 
-                    onChange={(val) => setForm((prev) => ({ ...prev, content: val }))}
+                    onChange={(val: string) => setForm((prev) => ({ ...prev, content: val }))}
                     modules={modules}
                     className="min-h-[400px]"
                     readOnly={saving}
