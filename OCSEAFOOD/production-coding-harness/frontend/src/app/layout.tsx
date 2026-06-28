@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -31,7 +32,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-navy-900 text-slate-100 font-sans">
-        <Header />
+        {/* Suspense required because Header uses useSearchParams() */}
+        <Suspense fallback={
+          <div className="h-16 bg-navy-900 border-b border-navy-800" />
+        }>
+          <Header />
+        </Suspense>
         <main className="flex-grow">{children}</main>
         <Footer />
         <FloatingContact />
