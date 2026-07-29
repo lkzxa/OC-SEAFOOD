@@ -9,7 +9,8 @@ interface Category {
   id: number;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
+  banner?: string | null;
 }
 
 interface Product {
@@ -134,8 +135,8 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
     return CATEGORY_ICONS[catSlug] || "stars";
   };
 
-  const getBanner = (catSlug: string) => {
-    return CATEGORY_BANNERS[catSlug] || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=1200";
+  const getBanner = (category: Category) => {
+    return category.banner || CATEGORY_BANNERS[category.slug] || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=1200";
   };
 
   // Filter visible products
@@ -167,17 +168,14 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
     <div className="space-y-16">
       {/* Hero Section */}
       {activeCategory && (
-        <section className="relative h-[250px] md:h-[400px] w-full flex items-center overflow-hidden border-b border-navy-700 bg-navy-950">
-          <div className="absolute inset-0 z-0">
-            <img
-              alt={activeCategory.name}
-              className="w-full h-full object-cover opacity-60"
-              src={getBanner(activeCategory.slug)}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/40 to-transparent"></div>
-          </div>
-          <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-6 w-full">
-            <div className="max-w-2xl space-y-4">
+        <section className="relative min-h-[260px] md:min-h-[340px] w-full flex items-center overflow-hidden border-b border-navy-700 bg-navy-950 py-8 md:py-12">
+          {/* Background decorative elements */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,115,22,0.08),transparent_50%)] z-0"></div>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(30,41,59,0.5),transparent_50%)] z-0"></div>
+          
+          <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-6 w-full flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* Left Column: Text Content */}
+            <div className="max-w-2xl space-y-4 text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-500 text-xs font-black tracking-widest uppercase">
                 <span className="material-symbols-outlined text-xs select-none">stars</span>
                 Danh mục đặc sắc
@@ -188,6 +186,18 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
               <p className="text-sm md:text-base text-slate-300 leading-relaxed font-medium">
                 {activeCategory.description || `Khám phá các loại hải sản ${activeCategory.name.toLowerCase()} thượng hạng, tuyển chọn kỹ lưỡng, giao tươi sống tận nhà.`}
               </p>
+            </div>
+
+            {/* Right Column: Banner Image (Resized to fit nicely without severe cropping) */}
+            <div className="relative w-full md:w-auto flex-shrink-0 flex justify-center md:justify-end">
+              <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[220px] lg:w-[400px] lg:h-[260px] rounded-2xl overflow-hidden border border-navy-700/80 bg-navy-900 shadow-2xl shadow-navy-950/80 group">
+                <img
+                  alt={activeCategory.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  src={getBanner(activeCategory)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -275,7 +285,10 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
             <div className="mt-12 flex items-center justify-center gap-2">
               <button
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onClick={() => {
+                  setCurrentPage((p) => Math.max(1, p - 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 className="w-10 h-10 flex items-center justify-center rounded border border-navy-700 text-slate-400 hover:bg-navy-800 hover:text-orange-500 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
               >
                 <span className="material-symbols-outlined select-none">chevron_left</span>
@@ -283,7 +296,10 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
               {[...Array(totalPages)].map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentPage(idx + 1)}
+                  onClick={() => {
+                    setCurrentPage(idx + 1);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
                   className={`w-10 h-10 flex items-center justify-center rounded font-extrabold text-xs transition-colors cursor-pointer ${
                     currentPage === idx + 1
                       ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
@@ -295,7 +311,10 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
               ))}
               <button
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => {
+                  setCurrentPage((p) => Math.min(totalPages, p + 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 className="w-10 h-10 flex items-center justify-center rounded border border-navy-700 text-slate-400 hover:bg-navy-800 hover:text-orange-500 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
               >
                 <span className="material-symbols-outlined select-none">chevron_right</span>
@@ -307,7 +326,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
 
       {/* Trust Badges */}
       <section className="bg-navy-950 py-16 border-t border-b border-navy-800">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-6 grid grid-cols-1 sm:grid-cols-3 gap-10">
           <div className="flex flex-col items-center text-center space-y-4">
             <span className="material-symbols-outlined text-orange-500 text-[48px] select-none">verified</span>
             <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">100% Tươi Sống</h4>
@@ -320,13 +339,6 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
             <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Giao Hàng Nhanh</h4>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs font-medium">
               Giao nhanh trong 2h đối với khu vực TP.HCM và Hà Nội.
-            </p>
-          </div>
-          <div className="flex flex-col items-center text-center space-y-4">
-            <span className="material-symbols-outlined text-orange-500 text-[48px] select-none">restaurant</span>
-            <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Chế Biến Miễn Phí</h4>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-xs font-medium">
-              Hỗ trợ làm sạch và chế biến theo menu yêu cầu từ đầu bếp 5 sao.
             </p>
           </div>
           <div className="flex flex-col items-center text-center space-y-4">

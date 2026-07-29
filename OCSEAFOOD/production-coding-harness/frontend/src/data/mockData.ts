@@ -4,12 +4,12 @@
  */
 
 export const MOCK_CATEGORIES = [
-  { id: 1, name: "Tôm Hùm & Tôm", slug: "tom-hum-tom", description: "Tôm hùm nhập khẩu, tôm sú, tôm thẻ tươi sống" },
-  { id: 2, name: "Cua & Ghẹ", slug: "cua-ghe", description: "Cua Hoàng Đế, cua biển, ghẹ xanh tươi sống" },
-  { id: 3, name: "Cá Tươi Sống", slug: "ca-tuoi-song", description: "Cá hồi, cá mú, cá tầm, cá bớp nhập khẩu" },
-  { id: 4, name: "Mực & Bạch Tuộc", slug: "muc-bach-tuoc", description: "Mực ống, mực lá, bạch tuộc tươi từ ngư trường" },
-  { id: 5, name: "Hàu & Sò", slug: "hau-so", description: "Hàu sữa Thái Bình Dương, sò điệp, sò huyết" },
-  { id: 6, name: "Hải Sản Chế Biến", slug: "hai-san-che-bien", description: "Thủy hải sản đã qua sơ chế, đông lạnh tiện lợi" },
+  { id: 1, name: "Tôm Hùm & Tôm", slug: "tom-hum-tom", description: "Tôm hùm nhập khẩu, tôm sú, tôm thẻ tươi sống", displayOrder: 1 },
+  { id: 2, name: "Cua & Ghẹ", slug: "cua-ghe", description: "Cua Hoàng Đế, cua biển, ghẹ xanh tươi sống", displayOrder: 2 },
+  { id: 3, name: "Cá Tươi Sống", slug: "ca-tuoi-song", description: "Cá hồi, cá mú, cá tầm, cá bớp nhập khẩu", displayOrder: 3 },
+  { id: 4, name: "Mực & Bạch Tuộc", slug: "muc-bach-tuoc", description: "Mực ống, mực lá, bạch tuộc tươi từ ngư trường", displayOrder: 4 },
+  { id: 5, name: "Hàu & Sò", slug: "hau-so", description: "Hàu sữa Thái Bình Dương, sò điệp, sò huyết", displayOrder: 5 },
+  { id: 6, name: "Hải Sản Chế Biến", slug: "hai-san-che-bien", description: "Thủy hải sản đã qua sơ chế, đông lạnh tiện lợi", displayOrder: 6 },
 ];
 
 export const MOCK_PRODUCTS = [

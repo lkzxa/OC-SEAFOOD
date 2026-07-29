@@ -4,18 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 interface Category {
   id: number;
   name: string;
   slug: string;
   description?: string | null;
+  banner?: string | null;
+  displayOrder: number;
 }
 
 const emptyForm = {
   name: "",
   slug: "",
   description: "",
+  banner: "",
+  displayOrder: 0,
 };
 
 export default function AdminCategoriesPage() {
@@ -63,6 +68,8 @@ export default function AdminCategoriesPage() {
       name: editingCategory.name,
       slug: editingCategory.slug,
       description: editingCategory.description || "",
+      banner: editingCategory.banner || "",
+      displayOrder: editingCategory.displayOrder ?? 0,
     });
   }, [editingCategory]);
 
@@ -93,6 +100,8 @@ export default function AdminCategoriesPage() {
           name: form.name.trim(),
           slug: form.slug.trim(),
           description: form.description.trim() || null,
+          banner: form.banner.trim() || null,
+          displayOrder: Number(form.displayOrder) || 0,
         }),
       });
 
@@ -169,6 +178,25 @@ export default function AdminCategoriesPage() {
             <Field label="Mô tả">
               <textarea rows={4} className="admin-input" value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} disabled={saving} placeholder="Nhập mô tả cho nhóm thực đơn..." />
             </Field>
+            <Field label="Banner danh mục lớn">
+              <ImageUploader
+                value={form.banner}
+                onChange={(url) => setForm((prev) => ({ ...prev, banner: url }))}
+                disabled={saving}
+                placeholder="Nhập URL banner hoặc Tải lên..."
+              />
+            </Field>
+            <Field label="Số thứ tự xuất hiện">
+              <input
+                type="number"
+                min="0"
+                className="admin-input"
+                value={form.displayOrder}
+                onChange={(e) => setForm((prev) => ({ ...prev, displayOrder: parseInt(e.target.value, 10) || 0 }))}
+                disabled={saving}
+                placeholder="Ví dụ: 1"
+              />
+            </Field>
             <button type="submit" disabled={saving || loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm">
               {saving ? "Đang lưu..." : editingId ? "Cập nhật danh mục" : "Tạo danh mục"}
             </button>
@@ -186,7 +214,9 @@ export default function AdminCategoriesPage() {
                 <thead>
                   <tr className="border-b border-navy-800 text-slate-400 text-xs font-extrabold uppercase tracking-widest">
                     <th className="py-3 px-4">Tên danh mục</th>
+                    <th className="py-3 px-4">Số thứ tự</th>
                     <th className="py-3 px-4">Slug</th>
+                    <th className="py-3 px-4">Banner</th>
                     <th className="py-3 px-4">Mô tả</th>
                     <th className="py-3 px-4 text-right">Thao tác</th>
                   </tr>
@@ -195,7 +225,17 @@ export default function AdminCategoriesPage() {
                   {categories.map((category) => (
                     <tr key={category.id} className="hover:bg-navy-900/30 transition-colors">
                       <td className="py-4 px-4 font-bold text-slate-100">{category.name}</td>
+                      <td className="py-4 px-4 text-xs text-slate-200 font-mono font-bold">{category.displayOrder}</td>
                       <td className="py-4 px-4 text-xs text-slate-400">{category.slug}</td>
+                      <td className="py-4 px-4 text-xs text-slate-400">
+                        {category.banner ? (
+                          <div className="relative h-10 w-24 rounded overflow-hidden border border-navy-800 bg-navy-950">
+                            <img src={category.banner} alt={category.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 italic">Không có banner</span>
+                        )}
+                      </td>
                       <td className="py-4 px-4 text-xs text-slate-400 max-w-[240px] truncate">
                         {category.description || "Chưa có mô tả."}
                       </td>
@@ -211,7 +251,7 @@ export default function AdminCategoriesPage() {
                   ))}
                   {!loading && categories.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-8 text-center">
+                      <td colSpan={6} className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-8 text-center">
                         Chưa có danh mục nào.
                       </td>
                     </tr>

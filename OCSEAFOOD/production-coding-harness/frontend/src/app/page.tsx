@@ -8,6 +8,7 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  banner?: string | null;
 }
 
 interface Product {
@@ -21,6 +22,7 @@ interface Product {
   showContact: boolean;
   isVisible: boolean;
   categoryId: number;
+  categoryIds?: number[];
 }
 
 async function getCategories(): Promise<Category[]> {
@@ -83,9 +85,14 @@ export default async function Home() {
     getPublicSettings(),
   ]);
 
-  // Group products by category
+  // Group products by category (supports many-to-many categoryIds)
   const productsByCategory = categories.reduce((acc, cat) => {
-    acc[cat.id] = products.filter(p => p.categoryId === cat.id && p.isVisible).slice(0, 4);
+    acc[cat.id] = products.filter(p => {
+      const belongs = p.categoryIds 
+        ? p.categoryIds.includes(cat.id) 
+        : p.categoryId === cat.id;
+      return belongs && p.isVisible;
+    }).slice(0, 4);
     return acc;
   }, {} as Record<number, Product[]>);
 
@@ -196,6 +203,15 @@ export default async function Home() {
                 Xem tất cả →
               </Link>
             </div>
+            {cat.banner && (
+              <div className="mb-6 relative h-[120px] sm:h-[180px] md:h-[240px] w-full rounded-xl overflow-hidden border border-navy-700/50 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+                <img
+                  src={cat.banner}
+                  alt={`Banner ${cat.name}`}
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]"
+                />
+              </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {catProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />

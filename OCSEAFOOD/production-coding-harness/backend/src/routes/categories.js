@@ -17,7 +17,10 @@ router.get('/', async (req, res, next) => {
       prisma.category.findMany({
         skip,
         take: pageSize,
-        orderBy: { name: 'asc' }
+        orderBy: [
+          { displayOrder: 'asc' },
+          { name: 'asc' }
+        ]
       }),
       prisma.category.count()
     ]);

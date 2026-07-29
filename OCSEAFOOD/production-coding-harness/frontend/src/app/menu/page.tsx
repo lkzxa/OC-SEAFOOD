@@ -10,6 +10,7 @@ interface Category {
   name: string;
   slug: string;
   description?: string;
+  banner?: string | null;
 }
 
 interface Product {
@@ -37,6 +38,8 @@ function MenuContent() {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+
+  const activeCategory = categories.find((cat) => cat.id === selectedCategoryId);
 
   // Sync selectedCategoryId with URL search params
   useEffect(() => {
@@ -222,10 +225,21 @@ function MenuContent() {
           ))}
         </div>
       ) : visibleProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {visibleProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="space-y-6">
+          {activeCategory?.banner && (
+            <div className="relative h-[120px] sm:h-[180px] md:h-[240px] w-full rounded-xl overflow-hidden border border-navy-700/50 shadow-lg">
+              <img
+                src={activeCategory.banner}
+                alt={`Banner ${activeCategory.name}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {visibleProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="text-center py-20 bg-navy-800 rounded-lg border border-navy-700/50">
