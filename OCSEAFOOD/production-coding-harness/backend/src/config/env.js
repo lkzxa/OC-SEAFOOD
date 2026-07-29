@@ -21,6 +21,7 @@ const envSchema = z.object({
   SMTP_SECURE: z.string().optional().transform((val) => val === 'true'),
   EMAIL_FROM: z.string().default('no-reply@ocseafood.com'),
   EMAIL_TO_ADMIN: z.string().default('admin@ocseafood.com'),
+  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').default('http://localhost:3000'),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
   ZALO_OA_ACCESS_TOKEN: z.string().optional(),
