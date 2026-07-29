@@ -1,10 +1,64 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 
+// Helper to scan product directories and return comma-separated images path
+function getProductImages(relDir) {
+  const uploadsDir = path.join(__dirname, '../../uploads');
+  const dirs = Array.isArray(relDir) ? relDir : [relDir];
+  const allImages = [];
+
+  for (const d of dirs) {
+    const fullPath = path.join(uploadsDir, d.replace(/\//g, path.sep));
+    if (!fs.existsSync(fullPath)) {
+      console.warn(`⚠️ Warning: Folder does not exist: ${fullPath}`);
+      continue;
+    }
+    const files = fs.readdirSync(fullPath);
+    const liveImages = [];
+    const processedImages = [];
+
+    for (const file of files) {
+      const fileLower = file.toLowerCase();
+      const ext = path.extname(fileLower);
+      if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') continue;
+
+      if (fileLower === 'song.png' || fileLower === 'sống.png') {
+        liveImages.push(`/uploads/${d}/${file}`);
+      } else if (fileLower.startsWith('che_bien_')) {
+        processedImages.push({
+          name: `/uploads/${d}/${file}`,
+          num: parseInt(fileLower.replace(/[^0-9]/g, '') || '0', 10)
+        });
+      }
+    }
+
+    // Sort processed images numerically
+    processedImages.sort((a, b) => a.num - b.num);
+
+    allImages.push({
+      live: liveImages,
+      processed: processedImages.map(img => img.name)
+    });
+  }
+
+  // Combine live and processed images (all live first, then all processed)
+  const finalLive = [];
+  const finalProcessed = [];
+  for (const item of allImages) {
+    finalLive.push(...item.live);
+    finalProcessed.push(...item.processed);
+  }
+
+  const combined = [...finalLive, ...finalProcessed];
+  return combined.join(',');
+}
+
 async function main() {
-  console.log('🌱 Starting database seeding...');
+  console.log('🌱 Starting database seeding with scanned image paths...');
 
   // 1. Create Admin User
   const adminEmail = 'admin@ocseafood.vn';
@@ -30,19 +84,39 @@ async function main() {
   // 2. Create Categories
   const categoriesData = [
     {
+      name: 'HÀNG NHẬP KHẨU',
+      slug: 'hangnhapkhau',
+      description: 'Hải sản cao cấp nhập khẩu trực tiếp từ các vùng biển sạch trên thế giới',
+      banner: '/uploads/1784010722723-128551052.png',
+      displayOrder: 0
+    },
+    {
       name: 'Cua - Ghẹ',
       slug: 'cua-ghe',
-      description: 'Cua ghẹ tươi sống chất lượng cao nhập khẩu và nội địa sạch từ vùng biển sâu'
+      description: 'Cua ghẹ tươi sống chất lượng cao nhập khẩu và nội địa sạch từ vùng biển sâu',
+      banner: '/uploads/1782894567620-747303798.png',
+      displayOrder: 1
     },
     {
       name: 'Tôm',
       slug: 'tom',
-      description: 'Tôm các loại tươi sống bơi tại bể, chuẩn xuất khẩu'
+      description: 'Tôm các loại tươi sống bơi tại bể, chuẩn xuất khẩu',
+      banner: '/uploads/1784011534812-48773558.png',
+      displayOrder: 2
+    },
+    {
+      name: 'Sò - Ốc',
+      slug: 'so-oc',
+      description: 'Sò điệp, bào ngư, hàu và các loại ốc tươi sống bồi bổ sức khỏe',
+      banner: '/uploads/1784011380933-741045239.png',
+      displayOrder: 3
     },
     {
       name: 'Cá',
       slug: 'ca',
-      description: 'Cá biển cao cấp làm sạch phi lê hoặc tươi sống nguyên con'
+      description: 'Cá biển cao cấp làm sạch phi lê hoặc tươi sống nguyên con',
+      banner: '/uploads/1784011492817-939554054.png',
+      displayOrder: 4
     }
   ];
 
@@ -58,139 +132,413 @@ async function main() {
       });
       console.log(`✅ Created Category: ${cat.name}`);
     } else {
-      console.log(`ℹ️ Category already exists: ${cat.name}`);
+      category = await prisma.category.update({
+        where: { id: category.id },
+        data: {
+          displayOrder: cat.displayOrder,
+          banner: cat.banner || category.banner
+        }
+      });
+      console.log(`✅ Updated Category displayOrder: ${cat.name}`);
     }
     categories[cat.slug] = category;
   }
 
-  // 3. Create Products for Cua - Ghẹ (slug: cua-ghe)
-  const cuaGheId = categories['cua-ghe'].id;
+  // Clear existing products to ensure clean seed
+  await prisma.product.deleteMany({});
+  console.log('🗑️ Deleted all products from database.');
+
+  // 3. Define Products Data with dynamic image folders mapping
+  // Note: Bút Đo Độ (missing category/folder) and Ốc Nhảy (missing folder) are deleted as requested.
   const productsData = [
     {
-      name: 'Cua Hoàng Đế (King Crab)',
-      slug: 'cua-hoang-de-king-crab',
-      description: 'Cua hoàng đế nhập khẩu trực tiếp từ vùng biển lạnh Alaska, thịt chắc ngọt đậm đà đẳng cấp đầu bếp 5 sao.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Cua King Đỏ Na Uy',
+      slug: 'cua-king-do-nauy',
+      description: 'Cua King đỏ nhập khẩu trực tiếp từ vùng biển sâu Na Uy, thịt chắc ngọt đẳng cấp.',
       unit: 'kg',
-      priceReference: 3200000,
+      priceReference: 1312500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      weightOptions: [
+        'Cua Cái: 0,8 - 1,1 Kg:1312500',
+        'Cua Đực: 0,8 - 1,1 Kg:1354500',
+        'Cua Đực: 1,2 - 1,4 Kg:1417500',
+        'Cua Gãy: 0,8 - 1,1 Kg:1207500'
+      ],
+      categorySlugs: ['cua-ghe', 'hangnhapkhau'],
+      relDir: 'CUA/King Đỏ'
     },
     {
-      name: 'Cua Huỳnh Đế Đại Dương',
-      slug: 'cua-huynh-de-dai-duong',
-      description: 'Cua Huỳnh Đế đánh bắt từ vùng biển lạnh sâu xa bờ khơi Việt Nam, cực kỳ hiếm và bổ dưỡng cao.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Cua King Xanh',
+      slug: 'cua-king-xanh',
+      description: 'Cua King Xanh sống tươi nhập khẩu loại 1.',
       unit: 'kg',
-      priceReference: 2500000,
+      priceReference: 1816500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      weightOptions: [
+        '1,6kg - 1,9kg:1816500',
+        '2kg - 2,5kg:1858500',
+        '2,5kg - 2,9kg:1879500'
+      ],
+      categorySlugs: ['cua-ghe', 'hangnhapkhau'],
+      relDir: 'CUA/KING XANH'
     },
     {
-      name: 'Cua Dungeness Mỹ',
-      slug: 'cua-dungeness-my',
-      description: 'Cua Dungeness nổi tiếng từ bờ Tây nước Mỹ, nổi danh với phần gạch béo ngậy và sớ thịt ngọt dai tuyệt vời.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Tôm Hùm Bông (Thiên Nhiên)',
+      slug: 'tom-hum-bong-viet-nam',
+      description: 'Tôm hùm bông thiên nhiên bơi sống tại hồ, chắc ngọt.',
       unit: 'kg',
-      priceReference: 1650000,
+      priceReference: 1837500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      weightOptions: [
+        '1,0 - 1,25 Kg:1837500',
+        '1,3 - 1,45 Kg:1879500',
+        '1,5 - 1,75 Kg:1921500',
+        '1,8 - 1,95 Kg:1942500',
+        '2,0 - 2,25 Kg:1879500',
+        '2,3 - 2,5 Kg:1879500',
+        '2,5 - 3,0 Kg:1879500'
+      ],
+      categorySlugs: ['tom'],
+      relDir: 'TÔM/TÔM BÔNG VIỆT NAM'
     },
     {
-      name: 'Cua Lột Mỹ Soft Shell',
-      slug: 'cua-lot-my-soft-shell',
-      description: 'Cua lột nhập khẩu Mỹ có thể ăn cả vỏ sau khi chế biến chiên giòn sốt me hoặc sốt trứng muối.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Cua Nâu Sofima',
+      slug: 'cua-nau-sofima',
+      description: 'Cua nâu Sofima nhập khẩu chất lượng cao.',
       unit: 'kg',
-      priceReference: 1100000,
+      priceReference: 504000,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      categorySlugs: ['cua-ghe', 'hangnhapkhau'],
+      relDir: 'CUA/CUA NÂU'
     },
     {
-      name: 'Cua Nâu Ireland Cao Cấp',
-      slug: 'cua-nau-ireland-cao-cap',
-      description: 'Cua nâu nhập khẩu Ireland siêu gạch béo ngậy ngập tràn vỏ cua, hương vị thơm bùi đặc trưng.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Ốc Stubugai (Ốc Xà Cừ)',
+      slug: 'oc-tsubugai',
+      description: 'Ốc Tsubugai nhập khẩu Nhật Bản giòn ngọt thơm ngon.',
       unit: 'kg',
-      priceReference: 950000,
+      priceReference: 525000,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/Oc Tsubugai'
     },
     {
-      name: 'Cua Năm Căn Cà Mau Loại I',
-      slug: 'cua-nam-can-ca-mau-loai-i',
-      description: 'Cua thịt được thu hoạch tự nhiên tại rừng ngập mặn Năm Căn Cà Mau, thịt chắc ngọt vô đối, không óp.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Sò Điệp Sống',
+      slug: 'so-diep-song',
+      description: 'Sò điệp bơi sống nhập khẩu từ vùng biển lạnh.',
       unit: 'kg',
-      priceReference: 850000,
+      priceReference: 577500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      weightOptions: [
+        'Size 3 - 5:577500',
+        'Size 6 - 8:546000',
+        'Size 8 - 10:514500',
+        'Size 10 - 12:472500'
+      ],
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/sò điệp'
     },
     {
-      name: 'Ghẹ Xanh Phan Thiết Loại I',
-      slug: 'ghe-xanh-phan-thiet-loai-i',
-      description: 'Ghẹ xanh tự nhiên Phan Thiết bơi sống tại hồ, thịt ngọt lịm dai thơm, giàu canxi.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Bào Ngư Hàn Quốc',
+      slug: 'bao-ngu-han-quoc',
+      description: 'Bào ngư Hàn Quốc bơi sống chất lượng hàng đầu.',
       unit: 'kg',
-      priceReference: 650000,
+      priceReference: 472500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      weightOptions: [
+        'Size 14 - 15:472500',
+        'Size 13 - 14:483000',
+        'Size 11 - 12:504000',
+        'Size 8 - 10:546000',
+        'Size 5 - 6:661500'
+      ],
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/BÀO NGƯ (HÀN QUỐC)'
     },
     {
-      name: 'Cua Đá Đảo Lý Sơn',
-      slug: 'cua-da-dao-ly-son',
-      description: 'Cua đá tự nhiên đảo Lý Sơn ăn rong biển núi lửa nên thịt rất thơm bùi, chắc nịch và ngọt đậm.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Hàu Vàng Hàn Quốc',
+      slug: 'hau-vang-han-quoc',
+      description: 'Hàu vàng Hàn Quốc thơm ngọt giàu dinh dưỡng.',
       unit: 'kg',
-      priceReference: 420000,
+      priceReference: 262500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/hàu vàng'
     },
     {
-      name: 'Cua Đồng Vĩnh Long Sạch',
-      slug: 'cua-dong-vinh-long-sach',
-      description: 'Cua đồng quê Vĩnh Long xay sẵn nấu canh thanh mát giải nhiệt mùa hè, giàu giá trị dinh dưỡng.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      name: 'Cá Bơn Vàng',
+      slug: 'ca-bon-vang',
+      description: 'Cá bơn vàng quý hiếm từ vùng biển sâu.',
       unit: 'kg',
-      priceReference: 120000,
+      priceReference: 1459500,
       showContact: false,
       isVisible: true,
-      categoryId: cuaGheId
+      categorySlugs: ['ca', 'hangnhapkhau'],
+      relDir: 'Cá/Cá bơn/Cá bơn vàng'
     },
     {
-      name: 'Cua Huỳnh Đế Khổng Lồ (Liên Hệ)',
-      slug: 'cua-huynh-de-khong-lo-contact',
-      description: 'Cua Huỳnh Đế kích cỡ khủng trên 2.5kg/con đánh bắt theo mùa. Vui lòng liên hệ hotline để nhận báo giá chi tiết.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
-      unit: 'con',
+      name: 'Cá Bơn Hàn Quốc',
+      slug: 'ca-bon-han-quoc',
+      description: 'Cá bơn Hàn Quốc tươi sống bơi khỏe.',
+      unit: 'kg',
+      priceReference: 661500,
+      showContact: false,
+      isVisible: true,
+      weightOptions: [
+        'Bơn Nâu:661500',
+        'Bơn Sao Safari:871500',
+        'Bơn Trắng: Liên hệ'
+      ],
+      categorySlugs: ['ca', 'hangnhapkhau'],
+      relDir: ['Cá/Cá bơn/bơn nâu', 'Cá/Cá bơn/TRẮNG']
+    },
+    {
+      name: 'Bào Ngư Úc Ngọc Bích (Xanh Ngọc)',
+      slug: 'bao-ngu-uc-ngoc-bich',
+      description: 'Bào ngư Úc ngọc bích nổi tiếng với thịt mềm ngọt.',
+      unit: 'kg',
+      priceReference: 1176000,
+      showContact: false,
+      isVisible: true,
+      weightOptions: [
+        'Size 9 - 10 con/kg:1176000',
+        'Size 7 - 9 con/kg:1207500',
+        'Size 6 - 7 con/kg:1291500'
+      ],
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/BÀO NGƯ ÚC'
+    },
+    {
+      name: 'Tôm Hùm Đỏ (Tây Úc)',
+      slug: 'tom-hum-do-tay-uc',
+      description: 'Tôm hùm đỏ Tây Úc nhập khẩu bơi sống chất lượng thượng hạng.',
+      unit: 'kg',
       priceReference: null,
       showContact: true,
       isVisible: true,
-      categoryId: cuaGheId
+      categorySlugs: ['tom', 'hangnhapkhau'],
+      relDir: 'TÔM/Tôm TÂY ÚC'
+    },
+    {
+      name: 'Ốc Vòi Voi Ngà',
+      slug: 'oc-voi-voi-nga',
+      description: 'Ốc vòi voi ngà tươi sống giòn sần sật.',
+      unit: 'kg',
+      priceReference: 630000,
+      showContact: false,
+      isVisible: true,
+      weightOptions: [
+        'Size 0,5 - 0,8 Kg:630000',
+        'Size 0,8 Kg+:661500'
+      ],
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/ốc vòi voi ngà'
+    },
+    {
+      name: 'Tôm Hùm Alaska',
+      slug: 'tom-hum-alaska',
+      description: 'Tôm hùm Alaska nhập khẩu trực tiếp từ vùng biển Canada.',
+      unit: 'kg',
+      priceReference: 808500,
+      showContact: false,
+      isVisible: true,
+      weightOptions: [
+        'Chix (400 - 550gr):808500',
+        'Size 1,0 - 1,2 Kg:892500',
+        'Size 1,3 - 1,7 Kg:913500',
+        'Size 1,8 - 3,5 Kg:892500'
+      ],
+      categorySlugs: ['tom', 'hangnhapkhau'],
+      relDir: 'TÔM/Tôm ALASKA'
+    },
+    {
+      name: 'Tôm Hùm Xanh',
+      slug: 'tom-hum-xanh',
+      description: 'Tôm hùm xanh tươi sống bơi khỏe.',
+      unit: 'kg',
+      priceReference: 924000,
+      showContact: false,
+      isVisible: true,
+      weightOptions: [
+        'Size 3 - 4:924000',
+        'Size 4 - 5:1018500'
+      ],
+      categorySlugs: ['tom', 'hangnhapkhau'],
+      relDir: 'TÔM/Tom Xanh'
+    },
+    {
+      name: 'Ốc Bulot Sofima',
+      slug: 'oc-bulot-sofima',
+      description: 'Ốc Bulot đông lạnh Sofima chất lượng nhập khẩu.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['so-oc'],
+      relDir: 'So Oc/Bulot'
+    },
+    {
+      name: 'Cua Nâu Sofima (Đông lạnh)',
+      slug: 'cua-nau-sofima-frozen',
+      description: 'Cua nâu Sofima đông lạnh tiện lợi.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['cua-ghe'],
+      relDir: 'CUA/CUA NÂU'
+    },
+    {
+      name: 'Bào Ngư Đông Lạnh',
+      slug: 'bao-ngu-dong-lanh',
+      description: 'Bào ngư đông lạnh tiện dụng, giữ trọn vị ngon ngọt.',
+      unit: 'kg',
+      priceReference: 205200,
+      showContact: false,
+      isVisible: true,
+      categorySlugs: ['so-oc'],
+      relDir: 'So Oc/BÀO NGƯ (HÀN QUỐC)'
+    },
+    {
+      name: 'Cua Cốm',
+      slug: 'cua-com',
+      description: 'Cua cốm hai da siêu gạch béo ngọt.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['cua-ghe'],
+      relDir: 'CUA/cua cốm'
+    },
+    {
+      name: 'Cua Gạch Cà Mau',
+      slug: 'cua-gach-ca-mau',
+      description: 'Cua gạch Cà Mau nổi tiếng chắc ngọt đầy gạch.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['cua-ghe'],
+      relDir: 'CUA/cua gạch cà mau'
+    },
+    {
+      name: 'Cua Tuyết',
+      slug: 'cua-tuyet',
+      description: 'Cua Tuyết nhập khẩu tươi sống ngọt dai.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['cua-ghe', 'hangnhapkhau'],
+      relDir: 'CUA/cua tuyết'
+    },
+    {
+      name: 'Cá Hồi',
+      slug: 'ca-hoi',
+      description: 'Cá hồi Nauy nhập khẩu cao cấp.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['ca', 'hangnhapkhau'],
+      relDir: 'Cá/cá hồi'
+    },
+    {
+      name: 'Cá Trích Ép Trứng',
+      slug: 'ca-trich-ep-trung',
+      description: 'Cá trích ép trứng chuẩn Sashimi Nhật Bản.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['ca', 'hangnhapkhau'],
+      relDir: 'Cá/cá trích ép trứng'
+    },
+    {
+      name: 'Ốc Vòi Voi Canada Vàng',
+      slug: 'oc-voi-voi-canada-vang',
+      description: 'Ốc vòi voi Canada vàng nhập khẩu tươi sống.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['so-oc', 'hangnhapkhau'],
+      relDir: 'So Oc/ỐC VÒI VOI VÀNG'
+    },
+    {
+      name: 'Tôm Hùm Bông Úc',
+      slug: 'tom-hum-bong-uc',
+      description: 'Tôm hùm bông nhập khẩu từ Úc.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['tom', 'hangnhapkhau'],
+      relDir: 'TÔM/Tôm BÔNG ÚC'
+    },
+    {
+      name: 'Tôm Sú',
+      slug: 'tom-su',
+      description: 'Tôm sú biển tươi sống bơi khỏe.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['tom'],
+      relDir: 'TÔM/Tom Sú'
+    },
+    {
+      name: 'Tôm Mũ Ni',
+      slug: 'tom-mu-ni',
+      description: 'Tôm mũ ni tươi sống ngọt thịt.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['tom'],
+      relDir: 'TÔM/TÔM MŨ NI'
+    },
+    {
+      name: 'Tôm Tít',
+      slug: 'tom-tit',
+      description: 'Tôm tít (bề bề) sống nhảy bành bạch.',
+      unit: 'kg',
+      priceReference: null,
+      showContact: true,
+      isVisible: true,
+      categorySlugs: ['tom'],
+      relDir: 'TÔM/tôm tít'
     }
   ];
 
   for (const prod of productsData) {
-    const existing = await prisma.product.findUnique({
-      where: { slug: prod.slug }
+    const { categorySlugs, relDir, ...productData } = prod;
+    
+    const categoryConnections = categorySlugs.map(slug => {
+      const cat = categories[slug];
+      if (!cat) throw new Error(`Category not found for slug: ${slug}`);
+      return { id: cat.id };
     });
 
-    if (!existing) {
-      await prisma.product.create({
-        data: prod
-      });
-      console.log(`✅ Created Product: ${prod.name}`);
-    } else {
-      console.log(`ℹ️ Product already exists: ${prod.name}`);
-    }
+    const imagePaths = getProductImages(relDir);
+
+    await prisma.product.create({
+      data: {
+        ...productData,
+        image: imagePaths,
+        categories: {
+          connect: categoryConnections
+        }
+      }
+    });
+    console.log(`✅ Created Product: ${prod.name} (images: ${imagePaths.split(',').length})`);
   }
 
   // 4. Create Blog Posts
