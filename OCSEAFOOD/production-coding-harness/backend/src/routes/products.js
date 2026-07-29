@@ -15,7 +15,11 @@ router.get('/', async (req, res, next) => {
       if (isNaN(categoryId)) {
         return res.status(400).json({ error: { message: 'Invalid categoryId format', status: 400 } });
       }
-      where.categoryId = categoryId;
+      where.categories = {
+        some: {
+          id: categoryId
+        }
+      };
     }
 
     // Optional pagination — default: page 1, up to 100 items
@@ -26,6 +30,9 @@ router.get('/', async (req, res, next) => {
     const [list, total] = await Promise.all([
       prisma.product.findMany({
         where,
+        include: {
+          categories: true
+        },
         skip,
         take: pageSize,
         orderBy: { createdAt: 'desc' }
@@ -33,8 +40,17 @@ router.get('/', async (req, res, next) => {
       prisma.product.count({ where })
     ]);
 
+    const mappedList = list.map(product => {
+      const categoryIds = product.categories ? product.categories.map(c => c.id) : [];
+      return {
+        ...product,
+        categoryId: categoryIds[0] || null,
+        categoryIds
+      };
+    });
+
     return res.status(200).json({
-      data: list,
+      data: mappedList,
       pagination: {
         total,
         page,
@@ -53,12 +69,19 @@ router.get('/slug/:slug', async (req, res, next) => {
     const { slug } = req.params;
     const item = await prisma.product.findUnique({
       where: { slug, isVisible: true },
-      include: { category: true }
+      include: { categories: true }
     });
     if (!item) {
       return res.status(404).json({ error: { message: 'Product not found', status: 404 } });
     }
-    return res.status(200).json(item);
+    const categoryIds = item.categories ? item.categories.map(c => c.id) : [];
+    const mapped = {
+      ...item,
+      category: item.categories ? item.categories[0] || null : null,
+      categoryId: categoryIds[0] || null,
+      categoryIds
+    };
+    return res.status(200).json(mapped);
   } catch (err) {
     next(err);
   }
@@ -71,11 +94,21 @@ router.get('/:id', async (req, res, next) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: { message: 'Invalid ID format', status: 400 } });
     }
-    const item = await prisma.product.findFirst({ where: { id, isVisible: true } });
+    const item = await prisma.product.findFirst({
+      where: { id, isVisible: true },
+      include: { categories: true }
+    });
     if (!item) {
       return res.status(404).json({ error: { message: 'Product not found', status: 404 } });
     }
-    return res.status(200).json(item);
+    const categoryIds = item.categories ? item.categories.map(c => c.id) : [];
+    const mapped = {
+      ...item,
+      category: item.categories ? item.categories[0] || null : null,
+      categoryId: categoryIds[0] || null,
+      categoryIds
+    };
+    return res.status(200).json(mapped);
   } catch (err) {
     next(err);
   }
@@ -84,8 +117,25 @@ router.get('/:id', async (req, res, next) => {
 // POST /products - Admin only
 router.post('/', auth, authorize('ADMIN'), validateBody(ProductSchema), async (req, res, next) => {
   try {
-    const item = await prisma.product.create({ data: req.body });
-    return res.status(201).json(item);
+    const { categoryIds, categoryId, ...rest } = req.body;
+    const ids = categoryIds || (categoryId ? [categoryId] : []);
+    const item = await prisma.product.create({
+      data: {
+        ...rest,
+        categories: {
+          connect: ids.map(id => ({ id }))
+        }
+      },
+      include: {
+        categories: true
+      }
+    });
+    const mapped = {
+      ...item,
+      categoryId: ids[0] || null,
+      categoryIds: ids
+    };
+    return res.status(201).json(mapped);
   } catch (err) {
     next(err);
   }
@@ -98,8 +148,27 @@ router.put('/:id', auth, authorize('ADMIN'), validateBody(ProductSchema), async 
     if (isNaN(id)) {
       return res.status(400).json({ error: { message: 'Invalid ID format', status: 400 } });
     }
-    const item = await prisma.product.update({ where: { id }, data: req.body });
-    return res.status(200).json(item);
+    const { categoryIds, categoryId, ...rest } = req.body;
+    const ids = categoryIds || (categoryId ? [categoryId] : []);
+
+    const item = await prisma.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        categories: {
+          set: ids.map(id => ({ id }))
+        }
+      },
+      include: {
+        categories: true
+      }
+    });
+    const mapped = {
+      ...item,
+      categoryId: ids[0] || null,
+      categoryIds: ids
+    };
+    return res.status(200).json(mapped);
   } catch (err) {
     next(err);
   }

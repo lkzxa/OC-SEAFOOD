@@ -13,6 +13,7 @@ interface ProductCardProps {
     image: string;
     unit: string;
     showContact: boolean;
+    badgeText?: string | null;
   };
 }
 
@@ -67,41 +68,41 @@ export default function ProductCard({ product }: ProductCardProps) {
   }, [addItem, isContact, priceVal, product]);
 
   return (
-    <div className="bg-navy-800 rounded-lg overflow-hidden border border-navy-700 hover:border-orange-500/50 transition-all flex flex-col group">
+    <div className="bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 rounded-lg overflow-hidden border border-amber-400/40 hover:border-yellow-300 hover:shadow-[0_12px_40px_rgba(239,68,68,0.35)] hover:-translate-y-1 transition-all duration-300 flex flex-col group holographic-card">
       <Link href={`/product/${product.slug}`} className="aspect-square relative overflow-hidden bg-navy-900 block">
         <img
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          src={product.image || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500"}
+          src={(product.image ? product.image.split(",")[0].trim() : "") || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500"}
           onError={(e) => {
             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500";
           }}
         />
-        <span className="absolute top-2 left-2 bg-red-600 text-[10px] font-black px-2 py-1 uppercase rounded-sm">
-          {isContact ? "Đặt hàng" : "Hàng sống"}
+        <span className="absolute top-2 left-2 bg-red-600 text-[10px] font-black px-2 py-1 uppercase rounded-sm z-20">
+          {product.badgeText || (isContact ? "Đặt hàng" : "Hàng sống")}
         </span>
       </Link>
       <div className="p-4 flex flex-col flex-1 relative">
         <Link href={`/product/${product.slug}`}>
-          <h3 className="text-sm md:text-base font-bold line-clamp-2 mb-2 min-h-[40px] text-slate-100 group-hover:text-orange-500 transition-colors">
+          <h3 className="text-sm md:text-base font-extrabold line-clamp-2 mb-2 min-h-[40px] text-white group-hover:text-amber-100 transition-colors drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]">
             {product.name}
           </h3>
         </Link>
-        <div className="space-y-1 mb-4 text-[11px] text-slate-400">
-          <p className="uppercase">Quy cách: <span className="text-slate-200">{product.unit}</span></p>
+        <div className="space-y-1 mb-4 text-[11px] text-amber-100">
+          <p className="uppercase">Quy cách: <span className="text-white font-bold">{product.unit}</span></p>
         </div>
         <div className="mt-auto relative">
-          <p className="text-lg font-black text-amber-400 mb-3">
+          <p className="text-xl md:text-2xl font-black text-yellow-300 mb-3 drop-shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
             {isContact ? "Liên hệ" : formatPrice(priceVal)}
           </p>
           {!isContact ? (
             <div className="relative">
               <button
                 onClick={handleAddToCart}
-                className={`w-full font-bold py-2.5 text-xs uppercase tracking-widest transition-all duration-300 rounded cursor-pointer active:scale-[0.97] flex items-center justify-center gap-1 ${
+                className={`w-full font-extrabold py-2.5 text-xs uppercase tracking-widest transition-all duration-300 rounded cursor-pointer active:scale-[0.97] flex items-center justify-center gap-1 ${
                   isAdded 
-                    ? "bg-green-500 text-white hover:bg-green-600 shadow-[0_0_15px_rgba(34,197,94,0.4)]" 
-                    : "bg-orange-500 text-white hover:bg-orange-600"
+                    ? "bg-green-600 text-white hover:bg-green-700 shadow-[0_0_15px_rgba(22,163,74,0.4)]" 
+                    : "bg-white text-red-600 hover:bg-amber-50 hover:text-red-700 shadow-[0_4px_15px_rgba(0,0,0,0.15)]"
                 }`}
               >
                 {isAdded ? (
@@ -118,7 +119,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               {clicks.map(click => (
                 <div
                   key={click.id}
-                  className="absolute pointer-events-none text-orange-500 font-black text-xl animate-float-up z-50 drop-shadow-md"
+                  className="absolute pointer-events-none text-yellow-300 font-black text-xl animate-float-up z-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
                   style={{ left: click.x - 10, top: click.y - 15 }}
                 >
                   +1
@@ -128,7 +129,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           ) : (
             <a
               href="tel:19001234"
-              className="w-full block text-center bg-navy-700 hover:bg-navy-600 text-slate-200 font-bold py-2.5 text-xs uppercase tracking-widest transition-colors rounded"
+              className="w-full block text-center bg-slate-950 hover:bg-slate-900 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors rounded shadow-sm border border-white/10"
             >
               Gọi tư vấn
             </a>

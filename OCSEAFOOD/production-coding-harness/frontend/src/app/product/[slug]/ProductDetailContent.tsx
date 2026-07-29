@@ -11,6 +11,7 @@ interface Category {
   id: number;
   name: string;
   slug: string;
+  banner?: string | null;
 }
 
 interface Product {
@@ -27,6 +28,9 @@ interface Product {
   category: Category;
   weightOptions?: string[];
   detailDescription?: string;
+  cookingSuggestion?: string;
+  storageInstruction?: string;
+  badgeText?: string | null;
 }
 
 interface ProductDetailContentProps {
@@ -43,6 +47,33 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
   const [selectedWeight, setSelectedWeight] = useState<string | undefined>(undefined);
   const [activeTab, setActiveTab] = useState("description");
   const [showToast, setShowToast] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Generate a list of at least 3 images for the slideshow
+  const images = useMemo(() => {
+    if (!product) return [];
+    const list = product.image ? product.image.split(",").map((img) => img.trim()).filter(Boolean) : [];
+    const placeholders = [
+      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&q=80",
+      "https://images.unsplash.com/photo-1553618551-fba689030290?w=800&q=80",
+      "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=800&q=80"
+    ];
+    placeholders.forEach(placeholder => {
+      if (list.length < 3 && !list.includes(placeholder)) {
+        list.push(placeholder);
+      }
+    });
+    return list;
+  }, [product]);
+
+  // Autoplay slideshow: transition every 4 seconds
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveImageIndex((prev) => (prev + 1) % images.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [activeImageIndex, images]);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,12 +88,17 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
         if (isMounted) {
           setProduct(data);
           setQuantity(1);
+          setActiveImageIndex(0); // Reset index on product change
           if (data.weightOptions && data.weightOptions.length > 0) {
-            setSelectedWeight(data.weightOptions[0].split(":")[0]);
+            const firstOpt = data.weightOptions[0];
+            const parts = firstOpt.split(":");
+            const priceVal = parts[parts.length - 1];
+            const hasPrice = parts.length > 1 && !isNaN(Number(priceVal));
+            setSelectedWeight(hasPrice ? parts.slice(0, -1).join(":") : firstOpt);
           } else {
             setSelectedWeight(undefined);
           }
-          
+
           // Fetch related products
           fetch(`/api/products?categoryId=${data.categoryId}`)
             .then((res) => res.json())
@@ -131,11 +167,14 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
 
   const parsedOptions = product.weightOptions
     ? product.weightOptions.map((opt) => {
-        const parts = opt.split(":");
-        const name = parts[0];
-        const price = parts[1] ? Number(parts[1]) : 0;
-        return { name, price };
-      })
+      const parts = opt.split(":");
+      const priceVal = parts[parts.length - 1];
+      const hasPrice = parts.length > 1 && !isNaN(Number(priceVal));
+      return {
+        name: hasPrice ? parts.slice(0, -1).join(":") : opt,
+        price: hasPrice ? Number(priceVal) : 0,
+      };
+    })
     : [];
 
   const activeOption = parsedOptions.find((o) => o.name === selectedWeight);
@@ -163,7 +202,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
       unit: product.unit,
       selectedWeight: selectedWeight,
     }, quantity);
-    
+
     // Show toast
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
@@ -184,7 +223,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-8 space-y-16">
-      
+
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed bottom-24 left-6 z-50 bg-green-500 text-white px-5 py-3.5 rounded-xl shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-200">
@@ -208,20 +247,64 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
 
       {/* Product Details Section */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        {/* Left: Product Image */}
+        {/* Left: Product Image Slideshow */}
         <div className="bg-navy-950 border border-navy-800/80 rounded-2xl p-4 shadow-2xl relative overflow-hidden group">
           <div className="aspect-square relative rounded-xl overflow-hidden bg-navy-900">
-            <img
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              src={product.image || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800"}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800";
-              }}
-            />
-            <span className="absolute top-4 left-4 bg-orange-500 text-white text-[10px] font-black px-3 py-1.5 uppercase tracking-widest rounded shadow">
-              {isContact ? "Đặt trước" : "Hàng tươi sống"}
+            {images.map((imgUrl, index) => (
+              <img
+                key={index}
+                alt={`${product.name} - Slide ${index + 1}`}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${index === activeImageIndex
+                    ? "opacity-100 scale-100 z-10"
+                    : "opacity-0 scale-95 pointer-events-none z-0"
+                  }`}
+                src={imgUrl || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800"}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800";
+                }}
+              />
+            ))}
+            <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-3 py-1.5 uppercase tracking-widest rounded shadow z-20">
+              {product.badgeText || (isContact ? "Đặt trước" : "Hàng tươi sống")}
             </span>
+
+            {/* Left/Right Controls */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
+                  aria-label="Previous image"
+                >
+                  <span className="material-symbols-outlined select-none text-lg">chevron_left</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveImageIndex((prev) => (prev + 1) % images.length)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
+                  aria-label="Next image"
+                >
+                  <span className="material-symbols-outlined select-none text-lg">chevron_right</span>
+                </button>
+
+                {/* Pagination Dots */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setActiveImageIndex(index)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${index === activeImageIndex
+                          ? "bg-orange-500 w-4"
+                          : "bg-white/50 hover:bg-white"
+                        }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -245,11 +328,10 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
                       key={opt.name}
                       type="button"
                       onClick={() => setSelectedWeight(opt.name)}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer ${
-                        selectedWeight === opt.name
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border cursor-pointer ${selectedWeight === opt.name
                           ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/10"
                           : "bg-navy-900 border-navy-800 text-slate-300 hover:border-slate-700 hover:text-white"
-                      }`}
+                        }`}
                     >
                       {opt.name}
                     </button>
@@ -352,7 +434,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
           </div>
 
           {/* Trust Badges */}
-          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-navy-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-navy-800">
             <div className="flex items-center gap-3 bg-navy-950/50 border border-navy-800/40 rounded-xl p-3">
               <span className="material-symbols-outlined text-orange-500 text-2xl select-none">verified</span>
               <div>
@@ -365,13 +447,6 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-300">Giao nhanh 2h</p>
                 <p className="text-[9px] text-slate-500">Ship sống trong nội thành</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-navy-950/50 border border-navy-800/40 rounded-xl p-3">
-              <span className="material-symbols-outlined text-orange-500 text-2xl select-none">restaurant</span>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-300">Chế biến miễn phí</p>
-                <p className="text-[9px] text-slate-500">Làm sạch + hấp sả free</p>
               </div>
             </div>
             <div className="flex items-center gap-3 bg-navy-950/50 border border-navy-800/40 rounded-xl p-3">
@@ -390,31 +465,28 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
         <div className="flex border-b border-navy-800 pb-4 mb-6 overflow-x-auto gap-6">
           <button
             onClick={() => setActiveTab("description")}
-            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-              activeTab === "description"
+            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${activeTab === "description"
                 ? "border-orange-500 text-orange-500"
                 : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
+              }`}
           >
             Mô tả sản phẩm
           </button>
           <button
             onClick={() => setActiveTab("cooking")}
-            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-              activeTab === "cooking"
+            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${activeTab === "cooking"
                 ? "border-orange-500 text-orange-500"
                 : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
+              }`}
           >
             Gợi ý chế biến món ngon
           </button>
           <button
             onClick={() => setActiveTab("preservation")}
-            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-              activeTab === "preservation"
+            className={`pb-2 text-xs font-black uppercase tracking-widest transition-colors cursor-pointer border-b-2 whitespace-nowrap ${activeTab === "preservation"
                 ? "border-orange-500 text-orange-500"
                 : "border-transparent text-slate-400 hover:text-slate-200"
-            }`}
+              }`}
           >
             Hướng dẫn bảo quản
           </button>
@@ -424,10 +496,10 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
           {activeTab === "description" && (
             <div className="space-y-4">
               {product.detailDescription ? (
-                <div 
+                <div
                   className="prose prose-invert prose-orange max-w-none text-slate-300 [&>p]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&_img]:rounded-xl [&_img]:shadow-lg"
                   // BUG-H01 fix: sanitize HTML to prevent XSS attacks
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.detailDescription) }} 
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.detailDescription) }}
                 />
               ) : (
                 <>
@@ -444,23 +516,41 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
 
           {activeTab === "cooking" && (
             <div className="space-y-4">
-              <p>Sản phẩm hải sản loại 1 tươi sống này phù hợp nhất với các cách chế biến đơn giản để giữ trọn vẹn vị ngọt thanh tự nhiên của thịt sống:</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Hấp sả ớt / Hấp bia:</strong> Giữ nguyên 100% hương vị nguyên bản ngọt đậm đặc trưng. Chấm muối tiêu chanh hoặc muối ớt xanh Nha Trang.</li>
-                <li><strong>Nướng mọi / Nướng muối ớt:</strong> Thơm lừng nức mũi, thịt săn chắc ngọt đậm vị khói.</li>
-                <li><strong>Rang muối Hồng Kông / Sốt bơ tỏi:</strong> Đậm đà thơm ngon, thích hợp cho các bữa tiệc gia đình sang trọng.</li>
-              </ul>
+              {product.cookingSuggestion ? (
+                <div
+                  className="prose prose-invert prose-orange max-w-none text-slate-300 [&>p]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>ul>li]:mb-2"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.cookingSuggestion) }}
+                />
+              ) : (
+                <>
+                  <p>Sản phẩm hải sản loại 1 tươi sống này phù hợp nhất với các cách chế biến đơn giản để giữ trọn vẹn vị ngọt thanh tự nhiên của thịt sống:</p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Hấp sả ớt / Hấp bia:</strong> Giữ nguyên 100% hương vị nguyên bản ngọt đậm đặc trưng. Chấm muối tiêu chanh hoặc muối ớt xanh Nha Trang.</li>
+                    <li><strong>Nướng mọi / Nướng muối ớt:</strong> Thơm lừng nức mũi, thịt săn chắc ngọt đậm vị khói.</li>
+                    <li><strong>Rang muối Hồng Kông / Sốt bơ tỏi:</strong> Đậm đà thơm ngon, thích hợp cho các bữa tiệc gia đình sang trọng.</li>
+                  </ul>
+                </>
+              )}
             </div>
           )}
 
           {activeTab === "preservation" && (
             <div className="space-y-4">
-              <p>Để đảm bảo chất năng ngon ngọt nhất của hải sản, quý khách nên chế biến ngay sau khi nhận hàng từ nhân viên giao hàng.</p>
-              <p>Trường hợp chưa sử dụng ngay:</p>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>Bọc kín sản phẩm trong túi thực phẩm sạch và cất trữ trong ngăn mát tủ lạnh (sử dụng trong vòng 12-24h).</li>
-                <li>Cấp đông sâu ở nhiệt độ -18 độ C nếu muốn lưu trữ dài ngày (lên đến 3 tháng). Rã đông tự nhiên trong ngăn mát tủ lạnh trước khi chế biến.</li>
-              </ul>
+              {product.storageInstruction ? (
+                <div
+                  className="prose prose-invert prose-orange max-w-none text-slate-300 [&>p]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h3]:text-lg [&>h3]:font-bold [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5 [&>ul>li]:mb-2"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.storageInstruction) }}
+                />
+              ) : (
+                <>
+                  <p>Để đảm bảo chất năng ngon ngọt nhất của hải sản, quý khách nên chế biến ngay sau khi nhận hàng từ nhân viên giao hàng.</p>
+                  <p>Trường hợp chưa sử dụng ngay:</p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>Bọc kín sản phẩm trong túi thực phẩm sạch và cất trữ trong ngăn mát tủ lạnh (sử dụng trong vòng 12-24h).</li>
+                    <li>Cấp đông sâu ở nhiệt độ -18 độ C nếu muốn lưu trữ dài ngày (lên đến 3 tháng). Rã đông tự nhiên trong ngăn mát tủ lạnh trước khi chế biến.</li>
+                  </ul>
+                </>
+              )}
             </div>
           )}
         </div>

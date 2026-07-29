@@ -15,6 +15,7 @@ interface Category {
   id: number;
   name: string;
   slug: string;
+  banner?: string | null;
 }
 
 interface Product {
@@ -27,9 +28,13 @@ interface Product {
   priceReference: number | string | null;
   showContact: boolean;
   isVisible: boolean;
-  categoryId: number;
+  categoryId?: number;
+  categoryIds: number[];
   weightOptions?: string[];
   detailDescription?: string;
+  cookingSuggestion?: string;
+  storageInstruction?: string;
+  badgeText?: string | null;
 }
 
 const emptyForm = {
@@ -41,9 +46,12 @@ const emptyForm = {
   priceReference: "",
   showContact: false,
   isVisible: true,
-  categoryId: "",
+  categoryIds: [] as number[],
   weightOptionsStr: "",
   detailDescription: "",
+  cookingSuggestion: "",
+  storageInstruction: "",
+  badgeText: "",
 };
 
 const formatCurrency = (value: number | string | null) => {
@@ -176,17 +184,22 @@ export default function AdminProductsPage() {
         editingProduct.priceReference === null ? "" : String(editingProduct.priceReference),
       showContact: editingProduct.showContact,
       isVisible: editingProduct.isVisible,
-      categoryId: String(editingProduct.categoryId),
+      categoryIds: editingProduct.categoryIds || (editingProduct.categoryId ? [editingProduct.categoryId] : []),
       weightOptionsStr: "",
       detailDescription: editingProduct.detailDescription || "",
+      cookingSuggestion: editingProduct.cookingSuggestion || "",
+      storageInstruction: editingProduct.storageInstruction || "",
+      badgeText: editingProduct.badgeText || "",
     });
 
     if (editingProduct.weightOptions && editingProduct.weightOptions.length > 0) {
       const rows = editingProduct.weightOptions.map((opt) => {
         const parts = opt.split(":");
+        const priceVal = parts[parts.length - 1];
+        const hasPrice = parts.length > 1 && !isNaN(Number(priceVal));
         return {
-          name: parts[0],
-          price: parts[1] || "",
+          name: hasPrice ? parts.slice(0, -1).join(":") : opt,
+          price: hasPrice ? priceVal : "",
         };
       });
       setOptionRows(rows);
@@ -206,8 +219,8 @@ export default function AdminProductsPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (!form.name || !form.slug || !form.description || !form.image || !form.unit || !form.categoryId) {
-      setErrorMsg("Vui lòng nhập đầy đủ thông tin sản phẩm.");
+    if (!form.name || !form.slug || !form.description || !form.image || !form.unit || form.categoryIds.length === 0) {
+      setErrorMsg("Vui lòng nhập đầy đủ thông tin sản phẩm và chọn ít nhất một danh mục.");
       return;
     }
 
@@ -225,9 +238,12 @@ export default function AdminProductsPage() {
       priceReference: form.showContact || priceValue === "" ? null : Number(priceValue),
       showContact: form.showContact,
       isVisible: form.isVisible,
-      categoryId: Number(form.categoryId),
+      categoryIds: form.categoryIds.map(Number),
       weightOptions,
       detailDescription: form.detailDescription.trim() || null,
+      cookingSuggestion: form.cookingSuggestion.trim() || null,
+      storageInstruction: form.storageInstruction.trim() || null,
+      badgeText: form.badgeText.trim() || null,
     };
 
     const hasOptionPrice = optionRows.some((row) => row.name.trim() !== "" && Number(row.price) > 0);
@@ -409,12 +425,49 @@ export default function AdminProductsPage() {
               </div>
             </Field>
 
+            <Field label="Gợi ý chế biến (Rich Text)">
+              <div className="bg-white text-black rounded-xl overflow-hidden mt-2">
+                <ReactQuill 
+                  theme="snow" 
+                  value={form.cookingSuggestion} 
+                  onChange={(val: string) => setForm((prev) => ({ ...prev, cookingSuggestion: val }))}
+                  modules={modules}
+                  className="min-h-[150px]"
+                  readOnly={saving}
+                />
+              </div>
+            </Field>
+
+            <Field label="Hướng dẫn bảo quản (Rich Text)">
+              <div className="bg-white text-black rounded-xl overflow-hidden mt-2">
+                <ReactQuill 
+                  theme="snow" 
+                  value={form.storageInstruction} 
+                  onChange={(val: string) => setForm((prev) => ({ ...prev, storageInstruction: val }))}
+                  modules={modules}
+                  className="min-h-[150px]"
+                  readOnly={saving}
+                />
+              </div>
+            </Field>
+
             <Field label="Ảnh (URL)" required>
               <ImageUploader 
                 value={form.image} 
                 onChange={(url) => setForm((prev) => ({ ...prev, image: url }))} 
                 disabled={saving}
                 placeholder="/images/cua.jpg hoặc Tải lên..."
+                multiple={true}
+              />
+            </Field>
+
+            <Field label="Ghi chú hình ảnh (Badge)">
+              <input
+                value={form.badgeText}
+                onChange={(e) => setForm((prev) => ({ ...prev, badgeText: e.target.value }))}
+                className="admin-input"
+                disabled={saving}
+                placeholder="Ví dụ: Hàng tươi sống, Đặt trước, Bán chạy..."
               />
             </Field>
             
@@ -430,20 +483,29 @@ export default function AdminProductsPage() {
                 />
               </Field>
               <Field label="Danh mục" required>
-                <select
-                  value={form.categoryId}
-                  onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value }))}
-                  className="admin-input"
-                  disabled={saving || loading}
-                  required
-                >
-                  <option value="">-- Chọn --</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-2 gap-2 bg-navy-900/60 border border-navy-800/80 rounded-xl p-3 max-h-[140px] overflow-y-auto mt-2">
+                  {categories.map((category) => {
+                    const isChecked = form.categoryIds.includes(category.id);
+                    return (
+                      <label key={category.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={saving || loading}
+                          className="rounded bg-navy-800 border-navy-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-navy-900"
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setForm((prev) => ({ ...prev, categoryIds: [...prev.categoryIds, category.id] }));
+                            } else {
+                              setForm((prev) => ({ ...prev, categoryIds: prev.categoryIds.filter((id) => id !== category.id) }));
+                            }
+                          }}
+                        />
+                        {category.name}
+                      </label>
+                    );
+                  })}
+                </div>
               </Field>
             </div>
 
@@ -451,7 +513,7 @@ export default function AdminProductsPage() {
               <input
                 type="number"
                 min="0"
-                step="1000"
+                step="any"
                 value={form.priceReference}
                 onChange={(e) => setForm((prev) => ({ ...prev, priceReference: e.target.value }))}
                 className="admin-input"
@@ -490,7 +552,7 @@ export default function AdminProductsPage() {
                   <input
                     type="number"
                     min="0"
-                    step="1000"
+                    step="any"
                     value={row.price}
                     onChange={(e) => {
                       const newRows = [...optionRows];
@@ -581,7 +643,7 @@ export default function AdminProductsPage() {
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               alt={product.name}
-                              src={product.image}
+                              src={product.image.split(",")[0].trim()}
                               className="w-full h-full object-cover"
                             />
                           ) : (
@@ -598,8 +660,10 @@ export default function AdminProductsPage() {
                           <div className="flex flex-wrap gap-1 mt-1">
                             {product.weightOptions.map((opt) => {
                               const parts = opt.split(":");
-                              const name = parts[0];
-                              const optPrice = parts[1] ? Number(parts[1]) : 0;
+                              const priceVal = parts[parts.length - 1];
+                              const hasPrice = parts.length > 1 && !isNaN(Number(priceVal));
+                              const name = hasPrice ? parts.slice(0, -1).join(":") : opt;
+                              const optPrice = hasPrice ? Number(priceVal) : 0;
                               const priceStr = optPrice > 0 ? formatCurrency(optPrice) : "Liên hệ";
                               return (
                                 <span
@@ -613,8 +677,14 @@ export default function AdminProductsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-xs font-semibold text-slate-300">
-                        {categories.find((c) => c.id === product.categoryId)?.name || `ID: ${product.categoryId}`}
+                      <td className="py-3 px-4 text-xs font-semibold text-slate-300 max-w-[150px] truncate" title={
+                        product.categoryIds && product.categoryIds.length > 0
+                          ? product.categoryIds.map((id) => categories.find((c) => c.id === id)?.name || `ID: ${id}`).join(", ")
+                          : categories.find((c) => c.id === product.categoryId)?.name || `ID: ${product.categoryId}`
+                      }>
+                        {product.categoryIds && product.categoryIds.length > 0
+                          ? product.categoryIds.map((id) => categories.find((c) => c.id === id)?.name || `ID: ${id}`).join(", ")
+                          : categories.find((c) => c.id === product.categoryId)?.name || `ID: ${product.categoryId}`}
                       </td>
                       <td className="py-3 px-4">
                         <div className="font-bold text-orange-400">{formatCurrency(product.priceReference)}</div>
