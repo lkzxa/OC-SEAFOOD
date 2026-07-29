@@ -13,29 +13,40 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
   try {
     const { items, note, fullName, email, phone, province, district, ward, streetAddress } = req.body;
 
+    const productItems = items.filter(item => !item.isCombo);
+    const comboItems = items.filter(item => item.isCombo);
+
     // Fetch product details for validation and server-side pricing
-    const productIds = items.map(item => item.productId);
-    const dbProducts = await prisma.product.findMany({
-      where: { id: { in: productIds } }
-    });
+    const productIds = productItems.map(item => item.productId);
+    const comboIds = comboItems.map(item => item.productId);
+
+    const [dbProducts, dbCombos] = await Promise.all([
+      prisma.product.findMany({
+        where: { id: { in: productIds } }
+      }),
+      prisma.combo.findMany({
+        where: { id: { in: comboIds } }
+      })
+    ]);
 
     const productsMap = new Map(dbProducts.map(p => [p.id, p]));
+    const combosMap = new Map(dbCombos.map(c => [c.id, c]));
 
-    // Validate that all products exist
-    for (const itemId of productIds) {
-      if (!productsMap.has(itemId)) {
+    // Validate that all products exist and are visibility-compliant
+    for (const item of productItems) {
+      if (!productsMap.has(item.productId)) {
         return res.status(400).json({
           error: {
-            message: `Product with ID ${itemId} not found`,
+            message: `Product with ID ${item.productId} not found`,
             status: 400
           }
         });
       }
 
-      const product = productsMap.get(itemId);
-      const hasOptionPrice = items.some(item => {
-        if (item.productId === itemId && item.selectedWeight && product.weightOptions && product.weightOptions.length > 0) {
-          const option = product.weightOptions.find(o => o.startsWith(item.selectedWeight + ':'));
+      const product = productsMap.get(item.productId);
+      const hasOptionPrice = items.some(it => {
+        if (!it.isCombo && it.productId === item.productId && it.selectedWeight && product.weightOptions && product.weightOptions.length > 0) {
+          const option = product.weightOptions.find(o => o.startsWith(it.selectedWeight + ':'));
           if (option) {
             const optPrice = Number(option.split(':')[1]);
             return !isNaN(optPrice) && optPrice > 0;
@@ -47,7 +58,29 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
       if (!product.isVisible || product.showContact || (product.priceReference === null && !hasOptionPrice)) {
         return res.status(400).json({
           error: {
-            message: `Product with ID ${itemId} is not available for checkout`,
+            message: `Product with ID ${item.productId} is not available for checkout`,
+            status: 400
+          }
+        });
+      }
+    }
+
+    // Validate that all combos exist and are visibility-compliant
+    for (const item of comboItems) {
+      if (!combosMap.has(item.productId)) {
+        return res.status(400).json({
+          error: {
+            message: `Combo with ID ${item.productId} not found`,
+            status: 400
+          }
+        });
+      }
+
+      const combo = combosMap.get(item.productId);
+      if (!combo.isVisible) {
+        return res.status(400).json({
+          error: {
+            message: `Combo with ID ${item.productId} is not available for checkout`,
             status: 400
           }
         });
@@ -63,36 +96,54 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
       let totalEstimated = 0;
       
       const orderItemsData = items.map(item => {
-        const product = productsMap.get(item.productId);
-        let price = Number(product.priceReference);
+        if (item.isCombo) {
+          const combo = combosMap.get(item.productId);
+          const price = Number(combo.price);
+          const itemTotal = price * item.quantity;
+          totalEstimated += itemTotal;
 
-        if (item.selectedWeight && product.weightOptions && product.weightOptions.length > 0) {
-          const option = product.weightOptions.find(o => o.startsWith(item.selectedWeight + ':'));
-          if (option) {
-            const optPrice = Number(option.split(':')[1]);
-            if (!isNaN(optPrice)) {
-              price = optPrice;
+          return {
+            productId: item.productId,
+            productName: `[Combo] ${combo.name}`,
+            productUnit: 'set',
+            quantity: item.quantity,
+            priceEstimated: price,
+            priceFinal: price,
+            totalEstimated: itemTotal,
+            totalFinal: itemTotal,
+          };
+        } else {
+          const product = productsMap.get(item.productId);
+          let price = Number(product.priceReference);
+
+          if (item.selectedWeight && product.weightOptions && product.weightOptions.length > 0) {
+            const option = product.weightOptions.find(o => o.startsWith(item.selectedWeight + ':'));
+            if (option) {
+              const optPrice = Number(option.split(':')[1]);
+              if (!isNaN(optPrice)) {
+                price = optPrice;
+              }
             }
           }
+
+          const itemTotal = price * item.quantity;
+          totalEstimated += itemTotal;
+
+          const unitString = item.selectedWeight
+            ? `${product.unit} (${item.selectedWeight})`
+            : product.unit;
+
+          return {
+            productId: item.productId,
+            productName: product.name,
+            productUnit: unitString,
+            quantity: item.quantity,
+            priceEstimated: price,
+            priceFinal: price,
+            totalEstimated: itemTotal,
+            totalFinal: itemTotal,
+          };
         }
-
-        const itemTotal = price * item.quantity;
-        totalEstimated += itemTotal;
-
-        const unitString = item.selectedWeight
-          ? `${product.unit} (${item.selectedWeight})`
-          : product.unit;
-
-        return {
-          productId: item.productId,
-          productName: product.name,
-          productUnit: unitString,
-          quantity: item.quantity,
-          priceEstimated: price,
-          priceFinal: price,
-          totalEstimated: itemTotal,
-          totalFinal: itemTotal,
-        };
       });
 
       // Create Order

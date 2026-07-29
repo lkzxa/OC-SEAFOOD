@@ -28,11 +28,11 @@ describe("Combo Selection Page", () => {
     expect(screen.getByText("Đổi trả 1-1")).not.toBeNull();
   });
 
-  it("should render all 6 premium combos with correct names and prices", () => {
+  it("should render all 6 premium combos with correct names and prices", async () => {
     render(<ComboPage />);
 
-    // Verify 6 combos are rendered
-    expect(screen.getByText("Combo Hải Sản Hoàng Gia")).not.toBeNull();
+    // Verify 6 combos are rendered using findBy to wait for async loading state
+    expect(await screen.findByText("Combo Hải Sản Hoàng Gia")).not.toBeNull();
     expect(screen.getByText("Set Lẩu Hải Sản Đại Dương")).not.toBeNull();
     expect(screen.getByText("Combo Nướng BBQ Special")).not.toBeNull();
     expect(screen.getByText("Set Sashimi Thượng Hạng")).not.toBeNull();
@@ -58,10 +58,10 @@ describe("Combo Selection Page", () => {
     expect(screen.getByText("Tặng Vang Trắng")).not.toBeNull();
   });
 
-  it("should support adding combos to cart when clicking Mua Ngay", () => {
+  it("should support adding combos to cart when clicking Mua Ngay", async () => {
     render(<ComboPage />);
 
-    const buyButtons = screen.getAllByRole("button", { name: /Mua Ngay/i });
+    const buyButtons = await screen.findAllByRole("button", { name: /Mua Ngay/i });
     expect(buyButtons.length).toBe(6);
 
     // Click on "Combo Hải Sản Hoàng Gia" which is the first one
@@ -77,6 +77,7 @@ describe("Combo Selection Page", () => {
       image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCf7a6RxEO1vB73aKYmRIRDah7wSPW-C1gGL5-XkJU5jbKr0nbysvyD-C5AMGkjg0itfZKd2Z4PXgcO3csDHbrnfuBeW7vxuxR2iAR79v64Z0--2KOiwUqszSqc3ubtgmXmMDDeYRfa8AeBsd6wiQjyAjhChyYyBv2Mx-dEwqt4QsU-FNVv5L1GShmqEU_qJc6t1uPXLgtisHjTGpFiNwt9H8qd_nZGRgYr998yTdWfH01vI8xvzjQVNhBgH0CcWomu1RuCz_JvhJ0",
       unit: "set",
       quantity: 1,
+      isCombo: true,
     });
   });
 });

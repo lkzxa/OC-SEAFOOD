@@ -14,6 +14,7 @@ const navItems = [
   { href: "/admin", label: "Bảng điều khiển", icon: "dashboard" },
   { href: "/admin/products", label: "Quản lý sản phẩm", icon: "inventory_2" },
   { href: "/admin/categories", label: "Quản lý danh mục", icon: "category" },
+  { href: "/admin/combos", label: "Quản lý combo", icon: "widgets" },
   { href: "/admin/orders", label: "Quản lý đơn hàng", icon: "receipt_long" },
   { href: "/admin/posts", label: "Quản lý bài viết", icon: "article" },
   { href: "/admin/settings", label: "Cấu hình hệ thống", icon: "settings" },

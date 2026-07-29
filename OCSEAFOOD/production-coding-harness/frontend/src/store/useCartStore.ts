@@ -9,13 +9,14 @@ export interface CartItem {
   image: string;
   unit: string;
   selectedWeight?: string;
+  isCombo?: boolean;
 }
 
 interface CartState {
   items: CartItem[];
   addItem: (product: Omit<CartItem, 'quantity'>, quantity: number) => void;
-  removeItem: (productId: number, selectedWeight?: string) => void;
-  updateQuantity: (productId: number, quantity: number, selectedWeight?: string) => void;
+  removeItem: (productId: number, selectedWeight?: string, isCombo?: boolean) => void;
+  updateQuantity: (productId: number, quantity: number, selectedWeight?: string, isCombo?: boolean) => void;
   clearCart: () => void;
   totalItems: () => number;
   subtotal: () => number;
@@ -29,7 +30,7 @@ export const useCartStore = create<CartState>()(
       addItem: (product, quantity) => {
         set((state) => {
           const existingIndex = state.items.findIndex(
-            (item) => item.id === product.id && item.selectedWeight === product.selectedWeight
+            (item) => item.id === product.id && item.selectedWeight === product.selectedWeight && !!item.isCombo === !!product.isCombo
           );
           if (existingIndex > -1) {
             const updatedItems = [...state.items];
@@ -43,26 +44,26 @@ export const useCartStore = create<CartState>()(
         });
       },
 
-      removeItem: (productId, selectedWeight) => {
+      removeItem: (productId, selectedWeight, isCombo) => {
         set((state) => ({
           items: state.items.filter(
-            (item) => !(item.id === productId && item.selectedWeight === selectedWeight)
+            (item) => !(item.id === productId && item.selectedWeight === selectedWeight && !!item.isCombo === !!isCombo)
           )
         }));
       },
 
-      updateQuantity: (productId, quantity, selectedWeight) => {
+      updateQuantity: (productId, quantity, selectedWeight, isCombo) => {
         set((state) => {
           if (quantity <= 0) {
             return {
               items: state.items.filter(
-                (item) => !(item.id === productId && item.selectedWeight === selectedWeight)
+                (item) => !(item.id === productId && item.selectedWeight === selectedWeight && !!item.isCombo === !!isCombo)
               )
             };
           }
           return {
             items: state.items.map((item) =>
-              (item.id === productId && item.selectedWeight === selectedWeight)
+              (item.id === productId && item.selectedWeight === selectedWeight && !!item.isCombo === !!isCombo)
                 ? { ...item, quantity }
                 : item
             )

@@ -29,6 +29,9 @@ jest.mock('../config/prisma', () => {
     product: {
       findMany: jest.fn(),
     },
+    combo: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     order: {
       create: jest.fn(),
     },

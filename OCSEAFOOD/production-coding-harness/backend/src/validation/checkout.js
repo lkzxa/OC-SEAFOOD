@@ -15,6 +15,7 @@ const CheckoutSchema = z.object({
       productId: z.number().int().positive('Product ID must be a positive integer'),
       quantity: z.number().int().positive('Quantity must be a positive integer'),
       selectedWeight: z.string().optional(),
+      isCombo: z.boolean().optional(),
     })
   ).min(1, 'At least one item is required'),
 });
