@@ -31,16 +31,19 @@ enum OutboxStatus {
 }
 
 model User {
-  id        Int             @id @default(autoincrement())
-  email     String          @unique
-  password  String
-  name      String
-  role      Role            @default(CUSTOMER)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  blogPosts BlogPost[]
-  auditLogs OrderAuditLog[]
-  orders    Order[]
+  id                 Int                 @id @default(autoincrement())
+  email              String              @unique
+  password           String?
+  googleId           String?             @unique
+  avatar             String?
+  name               String
+  role               Role                @default(CUSTOMER)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  blogPosts          BlogPost[]
+  auditLogs          OrderAuditLog[]
+  orders             Order[]
+  passwordResetToken PasswordResetToken?
 }
 
 model Category {
@@ -48,6 +51,8 @@ model Category {
   name        String
   slug        String    @unique
   description String?
+  banner      String?
+  displayOrder Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   products    Product[]
@@ -59,14 +64,16 @@ model Product {
   slug           String   @unique
   description    String
   detailDescription String? @db.Text
+  cookingSuggestion String? @db.Text
+  storageInstruction String? @db.Text
   image          String
   unit           String
   priceReference Decimal? @db.Decimal(12, 2)
   showContact    Boolean  @default(false)
   isVisible      Boolean  @default(true)
-  categoryId     Int
-  category       Category @relation(fields: [categoryId], references: [id])
+  categories     Category[]
   weightOptions  String[]
+  badgeText      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -156,4 +163,30 @@ model SystemSetting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Combo {
+  id            Int      @id @default(autoincrement())
+  name          String
+  slug          String   @unique
+  description   String
+  originalPrice Decimal? @db.Decimal(12, 2)
+  price         Decimal? @db.Decimal(12, 2)
+  showContact   Boolean  @default(false)
+  image         String
+  tag           String?
+  discountBadge String?
+  items         String[]
+  isVisible     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
