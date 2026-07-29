@@ -20,9 +20,9 @@ describe('Centralized Error Handler', () => {
   });
 
   it('should return formatted JSON error without stack trace in production mode', async () => {
-    // Override environment
-    process.env.NODE_ENV = 'production';
-    process.env.JWT_SECRET = 'productionsecret';
+    const env = require('../config/env');
+    const originalNodeEnv = env.NODE_ENV;
+    env.NODE_ENV = 'production';
 
     const app = require('../app');
     const res = await request(app)
@@ -36,7 +36,6 @@ describe('Centralized Error Handler', () => {
     expect(res.body.error.stack).toBeUndefined();
 
     // Clean up
-    delete process.env.NODE_ENV;
-    delete process.env.JWT_SECRET;
+    env.NODE_ENV = originalNodeEnv;
   });
 });

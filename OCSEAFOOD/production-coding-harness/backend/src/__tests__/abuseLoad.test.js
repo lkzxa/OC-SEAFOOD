@@ -42,6 +42,10 @@ jest.mock('../config/prisma', () => ({
     findMany: jest.fn(),
     count: jest.fn().mockResolvedValue(0),
   },
+  combo: {
+    findMany: jest.fn().mockResolvedValue([]),
+    count: jest.fn().mockResolvedValue(0),
+  },
   category: {
     findMany: jest.fn().mockResolvedValue([]),
     count: jest.fn().mockResolvedValue(0),

@@ -185,7 +185,12 @@ async function processOutbox() {
       }
     });
   } catch (err) {
-    console.warn('⚠️ Notification worker: Database connection failed. Retrying on next tick...');
+    // Ghi log chi tiết lỗi thay vì chỉ hiện dòng thông báo chung chung
+    console.error('❌ Notification worker: Database query failed!');
+    console.error('Chi tiết lỗi:', err.message);
+
+    // Nếu bạn muốn biết thêm về code lỗi (ví dụ: P1001 là lỗi không kết nối được server)
+    if (err.code) console.error('Mã lỗi Prisma:', err.code);
     return;
   }
 
@@ -205,9 +210,9 @@ async function processOutbox() {
         const payload = record.payload;
         const mailOptions = {
           from: env.EMAIL_FROM,
-          to: env.EMAIL_TO_ADMIN,
-          subject: `[OCSEAFOOD] New Order Request: ${payload.code}`,
-          html: `
+          to: payload.to || env.EMAIL_TO_ADMIN,
+          subject: payload.subject || `[OCSEAFOOD] New Order Request: ${payload.code}`,
+          html: payload.html || `
             <h3>New Virtual Order Placed</h3>
             <p><strong>Order ID:</strong> ${payload.orderId}</p>
             <p><strong>Code:</strong> ${payload.code}</p>

@@ -8,7 +8,7 @@ describe("About Page", () => {
 
     // Brand and Header checks
     expect(screen.getByText("Về")).not.toBeNull();
-    expect(screen.getByText("OCSEAFOOD")).not.toBeNull();
+    expect(screen.getByText("ỐC SEAFOOD")).not.toBeNull();
     expect(screen.getByText("Câu Chuyện Thương Hiệu")).not.toBeNull();
 
     // Vision, Mission and Core Values checks

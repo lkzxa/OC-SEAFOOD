@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from "vitest";
 import { notFound } from "next/navigation";
 import BlogPage from "../app/blog/page";
 import BlogPostDetailPage from "../app/blog/[id]/page";
@@ -47,6 +47,14 @@ const mockPosts = [
 ];
 
 describe("Blog Pages", () => {
+  beforeAll(() => {
+    process.env.BACKEND_URL = "http://localhost:5000";
+  });
+
+  afterAll(() => {
+    delete process.env.BACKEND_URL;
+  });
+
   beforeEach(() => {
     vi.mocked(notFound).mockClear();
 

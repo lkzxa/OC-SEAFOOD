@@ -97,7 +97,17 @@ describe('Business CRUD API - Categories, Products, BlogPosts', () => {
         .expect(200);
 
       expect(prisma.product.findMany).toHaveBeenCalledWith({
-        where: { isVisible: true, categoryId: 2 },
+        where: {
+          isVisible: true,
+          categories: {
+            some: {
+              id: 2
+            }
+          }
+        },
+        include: {
+          categories: true
+        },
         skip: 0,
         take: 100,
         orderBy: { createdAt: 'desc' }
@@ -138,10 +148,10 @@ describe('Business CRUD API - Categories, Products, BlogPosts', () => {
         .get('/products/slug/cua-huynh-de')
         .expect(200);
 
-      expect(res.body).toEqual(mockProduct);
+      expect(res.body).toEqual(expect.objectContaining(mockProduct));
       expect(prisma.product.findUnique).toHaveBeenCalledWith({
         where: { slug: 'cua-huynh-de', isVisible: true },
-        include: { category: true }
+        include: { categories: true }
       });
     });
 

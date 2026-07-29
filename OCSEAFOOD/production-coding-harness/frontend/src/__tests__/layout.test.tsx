@@ -5,12 +5,16 @@ import Footer from '../components/Footer';
 import { useCartStore } from '../store/useCartStore';
 
 const mockPush = vi.fn();
+const mockSearchParams = {
+  get: vi.fn(),
+};
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useRouter: () => ({
     push: mockPush,
   }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 describe('Root Layout Elements', () => {
@@ -24,7 +28,7 @@ describe('Root Layout Elements', () => {
       render(<Header />);
       
       // Brand Logo
-      const logoElement = screen.getByText('OCSEAFOOD');
+      const logoElement = screen.getByText('ỐC SEAFOOD');
       expect(logoElement).not.toBeNull();
       const linkElement = logoElement.closest('a');
       expect(linkElement).not.toBeNull();
@@ -89,8 +93,9 @@ describe('Root Layout Elements', () => {
       expect(screen.queryByText('close')).toBeNull();
     });
 
-    it('should submit search query on desktop', () => {
+    it('should submit search query on desktop', async () => {
       render(<Header />);
+      await new Promise((resolve) => setTimeout(resolve, 0));
       const searchInputs = screen.getAllByPlaceholderText('Tìm kiếm hải sản...');
       const desktopInput = searchInputs[0];
       
@@ -103,8 +108,9 @@ describe('Root Layout Elements', () => {
       expect(mockPush).toHaveBeenCalledWith('/menu?search=C%C3%A1%20h%E1%BB%93i');
     });
 
-    it('should submit search query on mobile', () => {
+    it('should submit search query on mobile', async () => {
       render(<Header />);
+      await new Promise((resolve) => setTimeout(resolve, 0));
       
       // Open mobile menu
       const toggleButton = screen.getByRole('button', { name: /Toggle menu/i });

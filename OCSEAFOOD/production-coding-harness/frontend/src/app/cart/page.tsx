@@ -145,6 +145,7 @@ export default function CartPage() {
             productId: item.id,
             quantity: item.quantity,
             selectedWeight: item.selectedWeight,
+            isCombo: item.isCombo,
           })),
         }),
       });
@@ -316,10 +317,10 @@ export default function CartPage() {
 
             <div className="divide-y divide-navy-800">
               {items.map((item) => (
-                <div key={`${item.id}-${item.selectedWeight || ""}`} className="py-4 flex gap-4 first:pt-0 last:pb-0 items-center justify-between">
+                <div key={`${item.id}-${item.selectedWeight || ""}-${item.isCombo ? "combo" : "prod"}`} className="py-4 flex gap-4 first:pt-0 last:pb-0 items-center justify-between">
                   <div className="flex gap-4 items-center flex-1 min-w-0">
                     <img
-                      src={item.image}
+                      src={item.image ? item.image.split(",")[0].trim() : ""}
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg border border-navy-700 bg-navy-900"
                       // BUG-L04 fix: Fallback khi ảnh bị lỗi/404
@@ -358,7 +359,7 @@ export default function CartPage() {
                     <div className="flex items-center bg-navy-900 border border-navy-700 rounded-lg overflow-hidden h-8">
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedWeight)}
+                        onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedWeight, item.isCombo)}
                         className="px-2 text-slate-400 hover:text-slate-200 hover:bg-navy-800 transition-colors h-full focus:outline-none"
                       >
                         <span className="material-symbols-outlined text-sm select-none">remove</span>
@@ -368,7 +369,7 @@ export default function CartPage() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedWeight)}
+                        onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedWeight, item.isCombo)}
                         className="px-2 text-slate-400 hover:text-slate-200 hover:bg-navy-800 transition-colors h-full focus:outline-none"
                       >
                         <span className="material-symbols-outlined text-sm select-none">add</span>
@@ -384,7 +385,7 @@ export default function CartPage() {
 
                     <button
                       type="button"
-                      onClick={() => removeItem(item.id, item.selectedWeight)}
+                      onClick={() => removeItem(item.id, item.selectedWeight, item.isCombo)}
                       className="text-slate-400 hover:text-red-400 transition-colors focus:outline-none p-1"
                       aria-label="Remove item"
                     >

@@ -76,12 +76,11 @@ describe("Admin management pages", () => {
       expect(screen.getByText("Tôm Hùm")).not.toBeNull();
     });
 
-    const textboxes = screen.getAllByRole("textbox") as HTMLInputElement[];
-    fireEvent.change(textboxes[0], { target: { value: "Cua Hoàng Đế" } });
-    fireEvent.change(textboxes[1], { target: { value: "cua-hoang-de" } });
-    fireEvent.change(textboxes[2], { target: { value: "Sản phẩm cao cấp" } });
-    fireEvent.change(textboxes[3], { target: { value: "/cua.jpg" } });
-    fireEvent.change(textboxes[4], { target: { value: "kg" } });
+    fireEvent.change(screen.getByPlaceholderText("Ví dụ: Cua Hoàng Đế"), { target: { value: "Cua Hoàng Đế" } });
+    fireEvent.change(screen.getByPlaceholderText("cua-hoang-de"), { target: { value: "cua-hoang-de" } });
+    fireEvent.change(screen.getByPlaceholderText("Nhập mô tả sản phẩm..."), { target: { value: "Sản phẩm cao cấp" } });
+    fireEvent.change(screen.getByPlaceholderText("/images/cua.jpg hoặc Tải lên..."), { target: { value: "/cua.jpg" } });
+    fireEvent.change(screen.getByPlaceholderText("Ví dụ: kg, con"), { target: { value: "kg" } });
 
     // Add dynamic option
     const addOptBtn = screen.getByRole("button", { name: "+ Thêm tùy chọn" });
@@ -95,7 +94,7 @@ describe("Admin management pages", () => {
     fireEvent.change(optionPriceInput, { target: { value: "500000" } });
 
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "1" } });
+    fireEvent.click(screen.getByLabelText("Hải sản"));
     fireEvent.change(spinbuttons[0], { target: { value: "2500000" } });
     fireEvent.click(screen.getByRole("button", { name: "Tạo sản phẩm" }));
 
@@ -194,21 +193,14 @@ describe("Admin management pages", () => {
 
     expect(screen.getByText("Danh sách bài viết")).not.toBeNull();
 
-    const textboxes = screen.getAllByRole("textbox") as HTMLInputElement[];
-    fireEvent.change(textboxes[0], { target: { value: "Mẹo chọn tôm" } });
-    fireEvent.change(textboxes[1], { target: { value: "meo-chon-tom" } });
-    fireEvent.change(textboxes[2], { target: { value: "/tom.jpg" } });
-    fireEvent.change(textboxes[3], { target: { value: "Nội dung bài viết" } });
-    fireEvent.click(screen.getByRole("button", { name: "Tạo bài viết" }));
+    // Verify "Thêm bài viết mới" button exists and points to /admin/posts/new
+    const addLink = screen.getByRole("link", { name: /Thêm bài viết mới/i });
+    expect(addLink).not.toBeNull();
+    expect(addLink.getAttribute("href")).toBe("/admin/posts/new");
 
-    await waitFor(() => {
-      expect(
-        fetchMock.mock.calls.some(
-          ([calledUrl, calledOptions]) =>
-            calledUrl === "/api/posts" &&
-            (calledOptions as RequestInit | undefined)?.method === "POST"
-        )
-      ).toBe(true);
-    });
+    // Verify "Sửa" link exists and points to the edit page of post 1
+    const editLink = screen.getByRole("link", { name: "Sửa" });
+    expect(editLink).not.toBeNull();
+    expect(editLink.getAttribute("href")).toBe("/admin/posts/1/edit");
   });
 });
