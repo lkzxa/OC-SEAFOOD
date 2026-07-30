@@ -109,9 +109,9 @@ export default function ComboPage() {
         <div className="relative group">
           <div className="absolute -inset-4 bg-orange-500/10 blur-3xl group-hover:bg-orange-500/20 transition-all duration-700"></div>
           <img
-            alt="Premium Seafood OCSEAFOOD"
+            alt="Combo Tiệc Hải Sản Cao Cấp OCSEAFOOD"
             className="relative z-10 w-full aspect-square object-cover rounded-xl shadow-2xl border border-navy-700"
-            src="/banner.png"
+            src="https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png"
           />
         </div>
       </section>
