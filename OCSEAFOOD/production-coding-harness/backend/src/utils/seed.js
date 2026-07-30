@@ -2,12 +2,14 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+const { uploadLocalFile } = require('../config/cloudinary');
 
 const prisma = new PrismaClient();
 
-// Helper to scan product directories and return comma-separated images path
-function getProductImages(relDir) {
-  const uploadsDir = path.join(__dirname, '../../uploads');
+// Helper to scan product directories, upload each image to Cloudinary,
+// and return a comma-separated list of the resulting secure_urls
+async function getProductImages(relDir) {
+  const uploadsDir = process.env.SEED_IMAGES_DIR || path.join(__dirname, '../../uploads');
   const dirs = Array.isArray(relDir) ? relDir : [relDir];
   const allImages = [];
 
@@ -18,8 +20,8 @@ function getProductImages(relDir) {
       continue;
     }
     const files = fs.readdirSync(fullPath);
-    const liveImages = [];
-    const processedImages = [];
+    const liveFiles = [];
+    const processedFiles = [];
 
     for (const file of files) {
       const fileLower = file.toLowerCase();
@@ -27,22 +29,30 @@ function getProductImages(relDir) {
       if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') continue;
 
       if (fileLower === 'song.png' || fileLower === 'sống.png') {
-        liveImages.push(`/uploads/${d}/${file}`);
+        liveFiles.push(file);
       } else if (fileLower.startsWith('che_bien_')) {
-        processedImages.push({
-          name: `/uploads/${d}/${file}`,
+        processedFiles.push({
+          file,
           num: parseInt(fileLower.replace(/[^0-9]/g, '') || '0', 10)
         });
       }
     }
 
     // Sort processed images numerically
-    processedImages.sort((a, b) => a.num - b.num);
+    processedFiles.sort((a, b) => a.num - b.num);
 
-    allImages.push({
-      live: liveImages,
-      processed: processedImages.map(img => img.name)
-    });
+    const liveImages = [];
+    for (const file of liveFiles) {
+      const result = await uploadLocalFile(path.join(fullPath, file), 'ocseafood/seed');
+      liveImages.push(result.secure_url);
+    }
+    const processedImages = [];
+    for (const { file } of processedFiles) {
+      const result = await uploadLocalFile(path.join(fullPath, file), 'ocseafood/seed');
+      processedImages.push(result.secure_url);
+    }
+
+    allImages.push({ live: liveImages, processed: processedImages });
   }
 
   // Combine live and processed images (all live first, then all processed)
@@ -82,40 +92,43 @@ async function main() {
   }
 
   // 2. Create Categories
+  // NOTE: banner source files (/uploads/<timestamp>-<random>.png) were previously uploaded
+  // through the admin panel and no longer exist on disk here, so they can't be migrated to
+  // Cloudinary automatically. Left null (schema-nullable) — re-upload via admin panel after deploy.
   const categoriesData = [
     {
       name: 'HÀNG NHẬP KHẨU',
       slug: 'hangnhapkhau',
       description: 'Hải sản cao cấp nhập khẩu trực tiếp từ các vùng biển sạch trên thế giới',
-      banner: '/uploads/1784010722723-128551052.png',
+      banner: null,
       displayOrder: 0
     },
     {
       name: 'Cua - Ghẹ',
       slug: 'cua-ghe',
       description: 'Cua ghẹ tươi sống chất lượng cao nhập khẩu và nội địa sạch từ vùng biển sâu',
-      banner: '/uploads/1782894567620-747303798.png',
+      banner: null,
       displayOrder: 1
     },
     {
       name: 'Tôm',
       slug: 'tom',
       description: 'Tôm các loại tươi sống bơi tại bể, chuẩn xuất khẩu',
-      banner: '/uploads/1784011534812-48773558.png',
+      banner: null,
       displayOrder: 2
     },
     {
       name: 'Sò - Ốc',
       slug: 'so-oc',
       description: 'Sò điệp, bào ngư, hàu và các loại ốc tươi sống bồi bổ sức khỏe',
-      banner: '/uploads/1784011380933-741045239.png',
+      banner: null,
       displayOrder: 3
     },
     {
       name: 'Cá',
       slug: 'ca',
       description: 'Cá biển cao cấp làm sạch phi lê hoặc tươi sống nguyên con',
-      banner: '/uploads/1784011492817-939554054.png',
+      banner: null,
       displayOrder: 4
     }
   ];
@@ -527,7 +540,7 @@ async function main() {
       return { id: cat.id };
     });
 
-    const imagePaths = getProductImages(relDir);
+    const imagePaths = await getProductImages(relDir);
 
     await prisma.product.create({
       data: {
@@ -577,6 +590,7 @@ async function main() {
   }
 
   console.log('🌱 Seeding completed successfully!');
+  console.warn('⚠️ Category banners were left null — re-upload the 5 banner images via the admin panel.');
 }
 
 main()

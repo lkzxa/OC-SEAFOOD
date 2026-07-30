@@ -22,6 +22,10 @@ const recruitmentRoutes = require('./routes/recruitment');
 const uploadRoutes = require('./routes/upload');
 const app = express();
 
+// Render/Vercel sit behind a reverse proxy — without this, req.ip collapses to the
+// proxy's IP for every visitor, causing rate limiters to share one bucket across all users.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 // BUG-016 fix: CORS configuration

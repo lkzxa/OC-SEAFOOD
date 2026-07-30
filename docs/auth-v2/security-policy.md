@@ -25,12 +25,10 @@ Both methods authenticate the same account.
 
 Administrators may authenticate using:
 
-- Google Sign-In (Primary)
-- Email + Password (Emergency Recovery)
+- Google Sign-In only.
 
-Google Sign-In is the recommended daily authentication method.
-
-Password login exists only as a recovery mechanism.
+Email + Password login is not allowed for ADMIN accounts. The backend rejects
+ADMIN password login attempts with HTTP 403 (see `admin-google-only.md`).
 
 ---
 
@@ -108,10 +106,8 @@ CUSTOMER accounts:
 
 ADMIN accounts:
 
-- should use Google for daily login
-- should keep a strong password only for emergency recovery
-
-Passwords should never be removed entirely.
+- must use Google Sign-In. Password login is not accepted, even if a
+  password hash exists on the account.
 
 ---
 
