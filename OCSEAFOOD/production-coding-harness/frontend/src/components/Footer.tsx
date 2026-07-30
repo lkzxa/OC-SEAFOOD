@@ -29,11 +29,15 @@ export default function Footer() {
             <div className="space-y-3 text-slate-400 text-sm">
               <p className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-500 select-none">location_on</span>
-                123 Đường Hải Sản, Quận 1, TP. HCM
+                10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh
+
+
               </p>
               <p className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-500 select-none">call</span>
-                Hotline: 1900 1234
+                Hotline: 0908 464 818
+
+
               </p>
               <p className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-500 select-none">mail</span>

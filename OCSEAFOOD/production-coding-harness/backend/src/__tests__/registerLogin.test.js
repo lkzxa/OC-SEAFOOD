@@ -2,6 +2,17 @@ const request = require('supertest');
 const app = require('../app');
 const prisma = require('../config/prisma');
 
+// Rate limiting itself is covered by rateLimiter.test.js. authRateLimiter is
+// shared (by IP) across register/login/google/forgot/reset-password, so
+// exercising register and login in the same file would otherwise exhaust
+// the real limiter's quota and produce false 429s here.
+jest.mock('../middleware/rateLimiter', () => ({
+  authRateLimiter: (req, res, next) => next(),
+  testAuthRateLimiter: (req, res, next) => next(),
+  checkoutRateLimiter: (req, res, next) => next(),
+  testCheckoutRateLimiter: (req, res, next) => next(),
+}));
+
 // Mock Prisma client singleton
 jest.mock('../config/prisma', () => ({
   user: {

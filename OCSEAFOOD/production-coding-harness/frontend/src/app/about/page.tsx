@@ -28,7 +28,7 @@ export default function AboutPage() {
           <img
             alt="OCSEAFOOD Seafood Selection"
             className="w-full h-full object-cover"
-            src="https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"
+            src="/banner.png"
           />
         </div>
       </section>
@@ -47,7 +47,7 @@ export default function AboutPage() {
           <span className="material-symbols-outlined text-4xl text-orange-500 select-none">explore</span>
           <h3 className="text-lg font-black uppercase text-slate-100 tracking-wider">Sứ Mệnh</h3>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Cam kết mang đến nguồn hải sản tươi sạch vượt trội, bảo toàn trọn vẹn hương vị tự nhiên và giá trị dinh dưỡng cao nhất để chăm sóc sức khỏe của mọi gia đình.
+            Mang đến trải nghiệm ẩm thực hải sản tươi sống và sang trọng cho mọi gia đình Việt, bảo toàn hương vị tươi ngon và giá trị dinh dưỡng của từng sản phẩm, đồng thời nâng cao nhận thức về hải sản nhập khẩu chất lượng cao.
           </p>
         </div>
 
@@ -55,8 +55,8 @@ export default function AboutPage() {
           <span className="material-symbols-outlined text-4xl text-orange-500 select-none">verified_user</span>
           <h3 className="text-lg font-black uppercase text-slate-100 tracking-wider">Giá Trị Cốt Lõi</h3>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Chất lượng đặt hàng đầu, quy trình bảo quản tiêu chuẩn khắt khe, minh bạch thông tin nguồn gốc sản phẩm và đặt sự chu đáo phục vụ khách hàng làm tôn chỉ hoạt động.
-          </p>
+            Khách hàng là trung tâm, sản phẩm chất lượng Loại 1, dịch vụ tận tâm và minh bạch, cam kết bảo vệ quyền lợi người tiêu dùng và phát triển bền vững.
+            </p>
         </div>
       </section>
 
@@ -74,7 +74,7 @@ export default function AboutPage() {
             <span className="material-symbols-outlined text-orange-500 text-2xl select-none pt-1">location_on</span>
             <div className="space-y-1">
               <h4 className="text-xs font-black uppercase text-slate-400">Địa chỉ</h4>
-              <p className="text-slate-200 text-xs md:text-sm font-semibold">123 Đường Hải Sản, Quận 1, TP. HCM</p>
+              <p className="text-slate-200 text-xs md:text-sm font-semibold">10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh</p>
             </div>
           </div>
 
@@ -82,7 +82,7 @@ export default function AboutPage() {
             <span className="material-symbols-outlined text-orange-500 text-2xl select-none pt-1">phone_in_talk</span>
             <div className="space-y-1">
               <h4 className="text-xs font-black uppercase text-slate-400">Hotline</h4>
-              <p className="text-slate-200 text-xs md:text-sm font-semibold">1900 1234</p>
+              <p className="text-slate-200 text-xs md:text-sm font-semibold">0908 464 818</p>
               <p className="text-[10px] text-slate-400">Hỗ trợ 24/7 từ 8h - 22h</p>
             </div>
           </div>

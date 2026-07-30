@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
 const { z } = require('zod');
 const errorHandler = require('./middleware/errorHandler');
 const auth = require('./middleware/auth');
@@ -20,6 +21,8 @@ const usersRoutes = require('./routes/users');
 const recruitmentRoutes = require('./routes/recruitment');
 const uploadRoutes = require('./routes/upload');
 const app = express();
+
+app.use(helmet());
 
 // BUG-016 fix: CORS configuration
 // Set CORS_ORIGIN env var to a comma-separated list of allowed origins in production

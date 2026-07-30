@@ -59,7 +59,7 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
 });
 
 // POST /auth/login - Log in an existing user
-router.post('/login', async (req, res, next) => {
+router.post('/login', authRateLimiter, async (req, res, next) => {
   try {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -120,7 +120,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 // POST /auth/google - Authenticate User via Google OAuth 2.0
-router.post('/google', async (req, res, next) => {
+router.post('/google', authRateLimiter, async (req, res, next) => {
   try {
     const { code } = req.body;
     if (!code) {

@@ -18,7 +18,7 @@ const JOB_OPENINGS: JobOpening[] = [
     title: "Nhân viên Tư vấn bán hàng (Online / Showroom)",
     quantity: 3,
     salary: "8.000.000 - 15.000.000 VND (Lương cứng + Hoa hồng)",
-    location: "Quận 1, TP. Hồ Chí Minh",
+    location: "10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh",
     description: "Tư vấn, chăm sóc khách hàng trực tuyến, chốt đơn hải sản trên website, Zalo OA và Fanpage chính thức của OCSEAFOOD.",
     requirements: [
       "Có kỹ năng giao tiếp tốt, giọng nói dễ nghe, nhẹ nhàng.",
@@ -31,7 +31,7 @@ const JOB_OPENINGS: JobOpening[] = [
     title: "Nhân viên Sơ chế & Chế biến hải sản",
     quantity: 2,
     salary: "9.000.000 - 12.000.000 VND (Hỗ trợ cơm trưa)",
-    location: "Showroom Quận 1, TP. Hồ Chí Minh",
+    location: "10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh",
     description: "Thực hiện sơ chế các loại cua, tôm hùm, cá tươi sống theo yêu cầu của khách hàng và chế biến sashimi chuẩn Nhật dưới sự hướng dẫn của Bếp trưởng.",
     requirements: [
       "Có kinh nghiệm sơ chế hoặc chế biến hải sản tươi sống từ 1 năm trở lên.",
