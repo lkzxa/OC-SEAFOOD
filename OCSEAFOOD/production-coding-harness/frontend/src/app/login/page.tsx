@@ -255,11 +255,11 @@ function LoginContent() {
       <div className="flex flex-col md:flex-row bg-navy-950 rounded-2xl overflow-hidden shadow-2xl border border-navy-700/50 max-w-[1200px] mx-auto min-h-[680px]">
 
         {/* Left side: Premium Image Banner */}
-        <div className="hidden md:block md:w-1/2 relative min-h-[600px] overflow-hidden">
+        <div className="hidden md:block md:w-1/2 relative min-h-[600px] overflow-hidden bg-navy-900">
           <img
-            alt="Luxury Seafood Display"
-            className="absolute inset-0 w-full h-full object-cover opacity-75 hover:scale-105 transition-transform duration-700"
-            src="https://lh3.googleusercontent.com/aida/AP1WRLvTSABaX3o0WsO5j3M6RcEY2BvkuFuc3dW7O4I5XJ1hexOsKbsL2g9KEa6CpH_UeJcID7KvRAZDK92XfJTLocZyeZ83ENKHuHOdJrrAh1Buzrs-jqmFr5TwtgD-nxnietcyZIzLlnK1JQTy6cejds2VaXndqTGd84Vv1ozKhspMSjEUXPP2Qf7rtY13o7DiEv3f6ZcZdpv7zuuTHlfhuQyIYyjMo3wMF7j1ncVHz-Qf885hHhMN3OaKKq8"
+            alt="ỐC SEAFOOD Logo"
+            className="absolute inset-0 w-full h-full object-contain p-16 hover:scale-105 transition-transform duration-700"
+            src="/logo.png"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-navy-950/20 via-navy-950/40 to-navy-950/90"></div>
 

@@ -134,7 +134,7 @@ export default async function Home() {
             <img
               alt="Premium Seafood"
               className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiEkaVOEBU_WihJZDiPItG_VlnNf06Yvnt-pzsWIPvIBECzm4XIre9_MstDdKO-thYFq93HgHu229kqzxK6U3TPqHtyKuzgHwZLhUkSlskrTnvITjPWqSu-dV2Bi1IvEAV3tAVNP-tMWm17VNDxQt8mokqpedwFLJoW5ODnz4_b3BRBRl-lJ9FNNq4epHEd1sutz1OzLexJrQf3GFMFh5jrjKEAdzaIx1wXtcvoxkPFJrJ_lvD7Tt54xHHfCh-rkH2Ddo9Rx28sOk"
+              src="https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent flex flex-col justify-end p-8 md:p-12">
               <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tight uppercase text-white leading-tight">
@@ -176,8 +176,8 @@ export default async function Home() {
               />
               <div className="absolute inset-0 bg-black/40 flex items-center p-6">
                 <h4 className="text-white font-extrabold text-xl">
-                  SASHIMI <br />
-                  <span className="text-amber-400">CHUẨN NHẬT</span>
+                  THỦY CUNG <br />
+                  <span className="text-amber-400">GIỮA LÒNG SÀI GÒN</span>
                 </h4>
               </div>
             </div>
