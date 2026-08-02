@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import MenuPage from "../app/menu/page";
 import { useCartStore } from "../store/useCartStore";
@@ -153,7 +153,7 @@ describe("Product Menu Page", () => {
     // "Gọi tư vấn" link button for contact product should be present
     const callButton = screen.getByRole("link", { name: /Gọi tư vấn/i });
     expect(callButton).not.toBeNull();
-    expect(callButton.getAttribute("href")).toBe("tel:19001234");
+    expect(callButton.getAttribute("href")).toBe("tel:0908464818");
   });
 
   it("should support adding to cart for normal products", async () => {
@@ -162,11 +162,18 @@ describe("Product Menu Page", () => {
     // Wait for data load
     await screen.findByText("Cá hồi Na Uy");
 
-    // Click "Thêm vào giỏ" button for Cá hồi Na Uy
+    // Default sort is price cao -> thấp, so locate the Cá hồi Na Uy card explicitly
+    // instead of relying on DOM order.
     const addButtons = screen.getAllByRole("button", { name: /Thêm vào giỏ/i });
     expect(addButtons.length).toBe(2); // Cá hồi Na Uy and Tôm hùm Alaska
 
-    fireEvent.click(addButtons[0]); // Cá hồi Na Uy
+    const caHoiCard = screen
+      .getByText("Cá hồi Na Uy")
+      .closest("a")
+      ?.closest("div.bg-gradient-to-br") as HTMLElement;
+    const caHoiAddButton = within(caHoiCard).getByRole("button", { name: /Thêm vào giỏ/i });
+
+    fireEvent.click(caHoiAddButton); // Cá hồi Na Uy
 
     // Cart store should have 1 item
     const cartItems = useCartStore.getState().items;

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import MenuPage from "../app/menu/page";
 import CartPage from "../app/cart/page";
@@ -183,7 +183,7 @@ describe("Main customer-to-admin flow", () => {
 
     expect(useCartStore.getState().items).toHaveLength(1);
 
-    render(<CartPage />);
+    const { container: cartContainer } = render(<CartPage />);
     await screen.findByText("Giỏ hàng & Đặt hàng");
 
     fireEvent.change(screen.getByPlaceholderText("Nguyễn Văn A"), {
@@ -196,7 +196,10 @@ describe("Main customer-to-admin flow", () => {
       target: { value: "0912345678" },
     });
 
-    const selects = screen.getAllByRole("combobox");
+    // Scope to CartPage's own container — MenuPage from earlier in this test
+    // is still mounted (no unmount between renders) and now also has a
+    // combobox (price sort dropdown), so an unscoped screen query would pick it up.
+    const selects = within(cartContainer).getAllByRole("combobox");
     fireEvent.change(selects[0], { target: { value: "HCM" } });
     fireEvent.change(selects[1], { target: { value: "District 1" } });
     fireEvent.change(selects[2], { target: { value: "Ben Nghe" } });

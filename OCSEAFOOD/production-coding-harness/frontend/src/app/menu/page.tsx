@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
 import { removeVietnameseTones } from "@/utils/stringUtils";
+import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
 
 interface Category {
   id: number;
@@ -32,12 +33,16 @@ function MenuContent() {
   const categoryParam = searchParams.get("categoryId");
   // BUG-015 fix: read search param from URL
   const searchParam = searchParams.get("search") || "";
+  const sortParam = searchParams.get("sort");
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<PriceSortOrder>(
+    sortParam === "price_asc" ? "asc" : "desc"
+  );
 
   const activeCategory = categories.find((cat) => cat.id === selectedCategoryId);
 
@@ -55,6 +60,12 @@ function MenuContent() {
       setSelectedCategoryId(null);
     }
   }, [categoryParam]);
+
+  // Sync sortOrder with URL search params
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSortOrder(sortParam === "price_asc" ? "asc" : "desc");
+  }, [sortParam]);
 
   // Fetch categories once on mount
   useEffect(() => {
@@ -123,22 +134,40 @@ function MenuContent() {
 
   const handleCategorySelect = (id: number | null) => {
     setSelectedCategoryId(id);
-    if (id) {
-      router.push(`/menu?categoryId=${id}`);
-    } else {
-      router.push("/menu");
-    }
+    const params = new URLSearchParams();
+    if (id) params.set("categoryId", String(id));
+    if (searchParam) params.set("search", searchParam);
+    if (sortOrder === "asc") params.set("sort", "price_asc");
+    const query = params.toString();
+    router.push(query ? `/menu?${query}` : "/menu");
+  };
+
+  const handleSortChange = (order: PriceSortOrder) => {
+    setSortOrder(order);
+    const params = new URLSearchParams();
+    if (selectedCategoryId) params.set("categoryId", String(selectedCategoryId));
+    if (searchParam) params.set("search", searchParam);
+    if (order === "asc") params.set("sort", "price_asc");
+    const query = params.toString();
+    router.push(query ? `/menu?${query}` : "/menu");
   };
 
   // Apply search filter client-side
   const normalizedSearchParam = removeVietnameseTones(searchParam);
-  const visibleProducts = products
-    .filter((p) => p.isVisible)
-    .filter((p) => {
-      if (!searchParam) return true;
-      const normalizedName = removeVietnameseTones(p.name);
-      return normalizedName.includes(normalizedSearchParam);
-    });
+  const visibleProducts = sortByPrice(
+    products
+      .filter((p) => p.isVisible)
+      .filter((p) => {
+        if (!searchParam) return true;
+        const normalizedName = removeVietnameseTones(p.name);
+        return normalizedName.includes(normalizedSearchParam);
+      }),
+    (p) =>
+      p.showContact || !p.priceReference || Number(p.priceReference) <= 0
+        ? null
+        : Number(p.priceReference),
+    sortOrder
+  );
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-8">
@@ -174,37 +203,54 @@ function MenuContent() {
 
       {/* CATEGORY TABS */}
       <div className="mb-10">
-        <div className="flex overflow-x-auto gap-3 pb-3 border-b border-navy-700/50 scrollbar-thin scrollbar-thumb-navy-700 scrollbar-track-transparent">
-          <button
-            onClick={() => handleCategorySelect(null)}
-            className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
-              selectedCategoryId === null
-                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
-            }`}
-          >
-            Tất cả
-          </button>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-3 border-b border-navy-700/50">
+          <div className="flex overflow-x-auto gap-3 scrollbar-thin scrollbar-thumb-navy-700 scrollbar-track-transparent">
+            <button
+              onClick={() => handleCategorySelect(null)}
+              className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
+                selectedCategoryId === null
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
+              }`}
+            >
+              Tất cả
+            </button>
 
-          {loadingCategories ? (
-            <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-400">
-              <span className="animate-pulse">Đang tải danh mục...</span>
-            </div>
-          ) : (
-            categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategorySelect(cat.id)}
-                className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
-                  selectedCategoryId === cat.id
-                    ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                    : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))
-          )}
+            {loadingCategories ? (
+              <div className="flex items-center gap-2 px-4 py-2 text-xs text-slate-400">
+                <span className="animate-pulse">Đang tải danh mục...</span>
+              </div>
+            ) : (
+              categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategorySelect(cat.id)}
+                  className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
+                    selectedCategoryId === cat.id
+                      ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                      : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <label htmlFor="sort-order" className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+              Sắp xếp
+            </label>
+            <select
+              id="sort-order"
+              value={sortOrder}
+              onChange={(e) => handleSortChange(e.target.value as PriceSortOrder)}
+              className="bg-navy-800 text-slate-200 text-xs font-bold border border-navy-700 rounded-full px-4 py-2.5 cursor-pointer focus:outline-none focus:border-orange-500 transition-colors"
+            >
+              <option value="desc">Giá: Cao → Thấp</option>
+              <option value="asc">Giá: Thấp → Cao</option>
+            </select>
+          </div>
         </div>
       </div>
 

@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { COMBOS, Combo } from "@/data/combos";
+import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
 
 export default function ComboPage() {
   const { addItem } = useCart();
   const [combosList, setCombosList] = useState<Combo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<PriceSortOrder>("desc");
 
   useEffect(() => {
     async function fetchCombos() {
@@ -60,6 +62,12 @@ export default function ComboPage() {
       currency: "VND",
     }).format(price).replace(/\s/g, "");
   };
+
+  const sortedCombos = sortByPrice(
+    combosList,
+    (c) => (c.showContact || !c.price ? null : c.price),
+    sortOrder
+  );
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-12 space-y-16">
@@ -118,10 +126,24 @@ export default function ComboPage() {
 
       {/* Main Combos Area */}
       <section className="space-y-8">
-        <div className="border-b border-navy-700 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-navy-700 pb-4">
           <h2 className="text-2xl md:text-3xl font-black uppercase text-slate-100 tracking-tight">
             COMBO 5 NGƯỜI
           </h2>
+          <div className="flex items-center gap-2 shrink-0">
+            <label htmlFor="combo-sort-order" className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+              Sắp xếp
+            </label>
+            <select
+              id="combo-sort-order"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as PriceSortOrder)}
+              className="bg-navy-800 text-slate-200 text-xs font-bold border border-navy-700 rounded-full px-4 py-2.5 cursor-pointer focus:outline-none focus:border-orange-500 transition-colors"
+            >
+              <option value="desc">Giá: Cao → Thấp</option>
+              <option value="asc">Giá: Thấp → Cao</option>
+            </select>
+          </div>
         </div>
 
         {/* Feature Banner */}
@@ -153,7 +175,7 @@ export default function ComboPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {combosList.map((combo) => (
+            {sortedCombos.map((combo) => (
               <div
                 key={combo.id}
                 className="bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 rounded-xl overflow-hidden border border-amber-400/40 hover:border-yellow-300 hover:shadow-[0_12px_40px_rgba(239,68,68,0.35)] hover:-translate-y-1 transition-all duration-300 flex flex-col group shadow-lg holographic-card"
