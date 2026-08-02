@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { removeVietnameseTones } from "@/utils/stringUtils";
 import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
 
@@ -299,6 +300,8 @@ function MenuContent() {
           </p>
         </div>
       )}
+
+      <RelatedPostsSection />
     </div>
   );
 }

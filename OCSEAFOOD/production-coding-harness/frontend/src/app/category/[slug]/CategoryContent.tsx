@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 
 interface Category {
   id: number;
@@ -350,6 +351,10 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
           </div>
         </div>
       </section>
+
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6">
+        <RelatedPostsSection />
+      </div>
     </div>
   );
 }

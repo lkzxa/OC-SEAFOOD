@@ -1,3 +1,5 @@
+import RelatedPostsSection from "@/components/RelatedPostsSection";
+
 export default function AboutPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12 space-y-16">
@@ -185,6 +187,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      <RelatedPostsSection />
     </div>
   );
 }

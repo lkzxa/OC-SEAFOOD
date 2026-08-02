@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 
 interface JobOpening {
   id: string;
@@ -423,6 +424,8 @@ export default function RecruitmentPage() {
           )}
         </div>
       </section>
+
+      <RelatedPostsSection />
     </div>
   );
 }

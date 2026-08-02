@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import AnnouncementModal from "@/components/AnnouncementModal";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "@/data/mockData";
 
 interface Category {
@@ -220,6 +221,8 @@ export default async function Home() {
           </section>
         );
       })}
+
+      <RelatedPostsSection />
 
       <AnnouncementModal
         enabled={publicSettings.HOMEPAGE_ANNOUNCEMENT_ENABLED}

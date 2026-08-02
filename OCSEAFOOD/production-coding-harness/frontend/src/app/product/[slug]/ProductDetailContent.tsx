@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/components/ProductCard";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 interface Category {
@@ -570,6 +571,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
         </section>
       )}
 
+      <RelatedPostsSection />
     </div>
   );
 }

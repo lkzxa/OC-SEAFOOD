@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { COMBOS, Combo } from "@/data/combos";
 import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 
 export default function ComboPage() {
   const { addItem } = useCart();
@@ -283,6 +284,8 @@ export default function ComboPage() {
           </div>
         </div>
       </section>
+
+      <RelatedPostsSection />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { COMBOS, Combo } from "@/data/combos";
+import RelatedPostsSection from "@/components/RelatedPostsSection";
 
 interface ComboDetailContentProps {
   slug: string;
@@ -459,6 +460,8 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
           ))}
         </div>
       </section>
+
+      <RelatedPostsSection />
     </div>
   );
 }
