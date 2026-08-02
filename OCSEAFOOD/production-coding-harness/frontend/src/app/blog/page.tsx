@@ -29,10 +29,11 @@ async function getPosts(): Promise<BlogPost[]> {
   }
 }
 
-// Helper to truncate text to a certain length
+// Strip HTML tags before truncating, since post.content is stored as rich-text HTML
 function getExcerpt(content: string, maxLength: number = 120): string {
-  if (content.length <= maxLength) return content;
-  return content.slice(0, maxLength) + "...";
+  const stripped = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (stripped.length <= maxLength) return stripped;
+  return stripped.slice(0, maxLength) + "...";
 }
 
 // Helper to format date
