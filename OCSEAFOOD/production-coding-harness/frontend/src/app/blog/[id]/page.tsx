@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { MOCK_BLOG_POSTS } from "@/data/mockData";
-import RelatedPostsSection from "@/components/RelatedPostsSection";
+import BlogSidebar from "@/components/BlogSidebar";
 
 interface BlogPost {
   id: number;
@@ -98,7 +98,7 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="max-w-[800px] mx-auto px-4 md:px-6 py-8">
+    <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-8">
       {/* Navigation breadcrumbs / Back button */}
       <div className="mb-6">
         <Link
@@ -110,44 +110,48 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
         </Link>
       </div>
 
-      <article className="space-y-6">
-        {/* Post Meta */}
-        <div className="space-y-3">
-          <h1 className="text-2xl md:text-4xl font-black text-slate-100 tracking-tight leading-tight uppercase">
-            {post.title}
-          </h1>
-          <div className="flex items-center gap-4 text-xs text-slate-400 border-b border-navy-700/50 pb-4">
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm select-none">calendar_month</span>
-              {formatDate(post.createdAt)}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm select-none">person</span>
-              Ban Biên Tập OCSEAFOOD
-            </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <article className="lg:col-span-8 space-y-6">
+          {/* Post Meta */}
+          <div className="space-y-3">
+            <h1 className="text-2xl md:text-4xl font-black text-slate-100 tracking-tight leading-tight uppercase">
+              {post.title}
+            </h1>
+            <div className="flex items-center gap-4 text-xs text-slate-400 border-b border-navy-700/50 pb-4">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm select-none">calendar_month</span>
+                {formatDate(post.createdAt)}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm select-none">person</span>
+                Ban Biên Tập OCSEAFOOD
+              </span>
+            </div>
           </div>
+
+          {/* Feature Image */}
+          {post.image && (
+            <div className="rounded-lg overflow-hidden aspect-video bg-navy-800 border border-navy-700">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={post.imageAlt || post.title}
+                className="w-full h-full object-cover"
+                src={post.image}
+              />
+            </div>
+          )}
+
+          {/* Full Content (Rich Text) */}
+          <div
+            className="text-slate-300 text-sm md:text-base leading-relaxed space-y-4 font-medium prose prose-invert max-w-none prose-orange prose-img:rounded-xl prose-img:border prose-img:border-navy-700 prose-a:text-orange-500 hover:prose-a:text-orange-400"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+        </article>
+
+        <div className="lg:col-span-4">
+          <BlogSidebar excludeId={post.id} />
         </div>
-
-        {/* Feature Image */}
-        {post.image && (
-          <div className="rounded-lg overflow-hidden aspect-video bg-navy-800 border border-navy-700">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={post.imageAlt || post.title}
-              className="w-full h-full object-cover"
-              src={post.image}
-            />
-          </div>
-        )}
-
-        {/* Full Content (Rich Text) */}
-        <div 
-          className="text-slate-300 text-sm md:text-base leading-relaxed space-y-4 font-medium prose prose-invert max-w-none prose-orange prose-img:rounded-xl prose-img:border prose-img:border-navy-700 prose-a:text-orange-500 hover:prose-a:text-orange-400"
-          dangerouslySetInnerHTML={{ __html: post.content }}
-        />
-      </article>
-
-      <RelatedPostsSection excludeId={post.id} />
+      </div>
     </div>
   );
 }
