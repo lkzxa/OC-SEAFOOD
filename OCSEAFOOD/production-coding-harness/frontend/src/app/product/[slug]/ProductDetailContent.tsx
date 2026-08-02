@@ -413,11 +413,11 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <a
-                    href="tel:19001234"
+                    href="tel:0908464818"
                     className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-4 rounded-xl transition-all shadow-lg cursor-pointer text-xs uppercase tracking-widest text-center"
                   >
                     <span className="material-symbols-outlined text-lg select-none">phone_in_talk</span>
-                    Gọi hotline: 1900 1234
+                    Gọi hotline: 0908 464 818
                   </a>
                   <a
                     href="https://zalo.me"

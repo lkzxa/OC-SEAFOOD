@@ -128,7 +128,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           ) : (
             <a
-              href="tel:19001234"
+              href="tel:0908464818"
               className="w-full block text-center bg-slate-950 hover:bg-slate-900 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors rounded shadow-sm border border-white/10"
             >
               Gọi tư vấn

@@ -219,7 +219,7 @@ describe("Product Detail Page Content", () => {
     expect(screen.queryByRole("button", { name: "Mua ngay" })).toBeNull();
 
     // Should show Call hotline and Zalo chat links
-    expect(screen.getByText(/Gọi hotline: 1900 1234/i)).not.toBeNull();
+    expect(screen.getByText(/Gọi hotline: 0908 464 818/i)).not.toBeNull();
     expect(screen.getByText(/Chat Zalo hỗ trợ/i)).not.toBeNull();
   });
 

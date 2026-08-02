@@ -24,8 +24,8 @@ describe("About Page", () => {
     expect(screen.getByText("Liên Hệ Với Chúng Tôi")).not.toBeNull();
 
     // Exact matching details required by harness rules
-    expect(screen.getByText("123 Đường Hải Sản, Quận 1, TP. HCM")).not.toBeNull();
-    expect(screen.getByText("1900 1234")).not.toBeNull();
+    expect(screen.getByText("10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh")).not.toBeNull();
+    expect(screen.getByText("0908 464 818")).not.toBeNull();
     expect(screen.getByText("contact@ocseafood.vn")).not.toBeNull();
   });
 

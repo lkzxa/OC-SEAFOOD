@@ -136,8 +136,8 @@ describe('Root Layout Elements', () => {
       render(<Footer />);
       
       // Contact Info
-      expect(screen.getByText(/123 Đường Hải Sản, Quận 1, TP\. HCM/i)).not.toBeNull();
-      expect(screen.getByText(/Hotline: 1900 1234/i)).not.toBeNull();
+      expect(screen.getByText(/10 Đ\. Số 7, Hạnh Thông, Hồ Chí Minh/i)).not.toBeNull();
+      expect(screen.getByText(/Hotline: 0908 464 818/i)).not.toBeNull();
       expect(screen.getByText(/Email: contact@ocseafood\.vn/i)).not.toBeNull();
     });
 
