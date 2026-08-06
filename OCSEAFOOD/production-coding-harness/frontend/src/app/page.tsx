@@ -3,6 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import AnnouncementModal from "@/components/AnnouncementModal";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "@/data/mockData";
+import { sortByPrice } from "@/utils/sortByPrice";
 
 interface Category {
   id: number;
@@ -86,14 +87,19 @@ export default async function Home() {
     getPublicSettings(),
   ]);
 
-  // Group products by category (supports many-to-many categoryIds)
+  // Group products by category (supports many-to-many categoryIds), highest price first
   const productsByCategory = categories.reduce((acc, cat) => {
-    acc[cat.id] = products.filter(p => {
-      const belongs = p.categoryIds 
-        ? p.categoryIds.includes(cat.id) 
+    const categoryProducts = products.filter(p => {
+      const belongs = p.categoryIds
+        ? p.categoryIds.includes(cat.id)
         : p.categoryId === cat.id;
       return belongs && p.isVisible;
-    }).slice(0, 4);
+    });
+    acc[cat.id] = sortByPrice(
+      categoryProducts,
+      (p) => (p.showContact || !p.priceReference || Number(p.priceReference) <= 0 ? null : Number(p.priceReference)),
+      "desc"
+    ).slice(0, 4);
     return acc;
   }, {} as Record<number, Product[]>);
 
