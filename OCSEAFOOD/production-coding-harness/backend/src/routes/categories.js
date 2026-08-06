@@ -85,6 +85,15 @@ router.delete('/:id', auth, authorize('ADMIN'), async (req, res, next) => {
     await prisma.category.delete({ where: { id } });
     return res.status(200).json({ status: 'success', message: 'Category deleted' });
   } catch (err) {
+    // Foreign key constraint violation — category still has products assigned
+    if (err.code === 'P2003') {
+      return res.status(400).json({
+        error: {
+          message: 'Không thể xóa danh mục còn sản phẩm bên trong. Vui lòng chuyển hoặc xóa sản phẩm trước.',
+          status: 400
+        }
+      });
+    }
     next(err);
   }
 });
