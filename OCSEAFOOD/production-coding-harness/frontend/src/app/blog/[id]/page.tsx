@@ -4,6 +4,7 @@ import { Metadata } from "next";
 import { MOCK_BLOG_POSTS } from "@/data/mockData";
 import BlogSidebar from "@/components/BlogSidebar";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 interface BlogPost {
   id: number;
@@ -145,7 +146,7 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
           {/* Full Content (Rich Text) */}
           <div
             className="text-slate-300 text-sm md:text-base leading-relaxed space-y-4 font-medium prose prose-invert max-w-none prose-orange prose-img:rounded-xl prose-img:border prose-img:border-navy-700 prose-a:text-orange-500 hover:prose-a:text-orange-400"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
           />
         </article>
 

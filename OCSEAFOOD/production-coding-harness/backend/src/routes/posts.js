@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 const { validateBody } = require('../middleware/validate');
 const { BlogPostSchema } = require('../validation/business');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 // GET /posts - Public list (only visible posts)
 router.get('/', async (req, res, next) => {
@@ -43,6 +44,7 @@ router.post('/', auth, authorize('ADMIN'), validateBody(BlogPostSchema), async (
   try {
     const data = {
       ...req.body,
+      content: sanitizeHtml(req.body.content),
       authorId: req.user.id // Enforced security: read from token context
     };
     const item = await prisma.blogPost.create({ data });
@@ -59,7 +61,8 @@ router.put('/:id', auth, authorize('ADMIN'), validateBody(BlogPostSchema), async
     if (isNaN(id)) {
       return res.status(400).json({ error: { message: 'Invalid ID format', status: 400 } });
     }
-    const item = await prisma.blogPost.update({ where: { id }, data: req.body });
+    const data = { ...req.body, content: sanitizeHtml(req.body.content) };
+    const item = await prisma.blogPost.update({ where: { id }, data });
     return res.status(200).json(item);
   } catch (err) {
     next(err);
