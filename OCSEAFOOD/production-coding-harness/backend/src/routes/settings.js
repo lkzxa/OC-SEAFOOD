@@ -214,7 +214,7 @@ router.post('/test-email', auth, authorize('ADMIN'), async (req, res, next) => {
     }
 
     const to = req.user.email || env.EMAIL_TO_ADMIN;
-    const transporter = createMailTransporter(smtpSettings);
+    const transporter = await createMailTransporter(smtpSettings);
     await transporter.sendMail({
       from: emailFrom,
       to,

@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 const https = require('https');
+const net = require('net');
+const dns = require('dns');
 const prisma = require('../config/prisma');
 const env = require('../config/env');
 
@@ -7,10 +9,29 @@ let intervalId = null;
 let isProcessing = false;
 
 /**
+ * Resolves a hostname to its IPv4 address. nodemailer picks IPv4 vs IPv6 based on
+ * which address families the local machine's network interfaces report — inside
+ * Render's containers this misdetects IPv6 as usable (ENETUNREACH, no outbound
+ * IPv6 route) while skipping IPv4 entirely. Resolving to IPv4 ourselves and
+ * passing the literal IP bypasses that broken detection (nodemailer skips its own
+ * DNS logic whenever `host` is already an IP).
+ */
+async function resolveIPv4(host) {
+  if (net.isIP(host)) return host;
+  try {
+    const addresses = await dns.promises.resolve4(host);
+    if (addresses && addresses.length > 0) return addresses[0];
+  } catch (_err) {
+    // Fall through to the original hostname if IPv4 resolution fails.
+  }
+  return host;
+}
+
+/**
  * Creates nodemailer transport from a resolved SMTP settings object
  * ({ host, port, user, pass, secure }). Falls back to console log mock if credentials are not present.
  */
-function createMailTransporter(smtpSettings) {
+async function createMailTransporter(smtpSettings) {
   const { host, port, user, pass, secure } = smtpSettings || {};
 
   if (!host || !user || !pass) {
@@ -29,13 +50,20 @@ ${mailOptions.text || mailOptions.html}
     };
   }
 
+  const resolvedHost = await resolveIPv4(host);
+
   return nodemailer.createTransport({
-    host,
+    host: resolvedHost,
     port,
     secure,
     auth: {
       user,
       pass
+    },
+    // Preserve TLS SNI/certificate validation against the real hostname even
+    // though we connect using its resolved IPv4 address above.
+    tls: {
+      servername: host
     },
     // Fail fast instead of hanging for minutes (nodemailer defaults are very long)
     // on a wrong host/port/secure combination.
@@ -240,7 +268,7 @@ async function processOutbox() {
           `
         };
 
-        const transporter = createMailTransporter(smtpSettings);
+        const transporter = await createMailTransporter(smtpSettings);
         await transporter.sendMail(mailOptions);
       } else if (record.type === 'TELEGRAM') {
         const payload = record.payload;
