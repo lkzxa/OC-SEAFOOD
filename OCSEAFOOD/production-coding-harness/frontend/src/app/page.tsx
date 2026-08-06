@@ -4,6 +4,7 @@ import AnnouncementModal from "@/components/AnnouncementModal";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "@/data/mockData";
 import { sortByPrice } from "@/utils/sortByPrice";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface Category {
   id: number;
@@ -141,7 +142,7 @@ export default async function Home() {
             <img
               alt="Premium Seafood"
               className="w-full h-full object-cover"
-              src="https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png"
+              src={optimizeImageUrl("https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png", 1600)}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-900/90 via-navy-900/20 to-transparent flex flex-col justify-end p-8 md:p-12">
               <h1 className="text-3xl md:text-5xl font-black mb-4 tracking-tight uppercase text-white leading-tight">
@@ -166,7 +167,8 @@ export default async function Home() {
               <img
                 alt="Special Combo"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKW27x3Gw0KD2BMBxDk5A6OtM8tt9gdu64rImIN2pviB7z71qPT9KZ6LUE6thL7jG6kEKJ0TKCAm0RCHjUpvP1wI7ds-o_5gw1w_n6RtUs23jkEKKyULZBqW8u5scVcjEjWQOO-anM3Ypq2UTY2gnhy6o9ZFjfErovPIXV6u5Psi2H90sgDZxHdIjY_cij2FwX-3mI5zh58SbNWfq9MjRhffJ8AGV12HQwqie2ez67P-SVy60lfc75vwND6Vbi_ZIKvnOQmlL1eW4"
+                loading="lazy"
+                src={optimizeImageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuAKW27x3Gw0KD2BMBxDk5A6OtM8tt9gdu64rImIN2pviB7z71qPT9KZ6LUE6thL7jG6kEKJ0TKCAm0RCHjUpvP1wI7ds-o_5gw1w_n6RtUs23jkEKKyULZBqW8u5scVcjEjWQOO-anM3Ypq2UTY2gnhy6o9ZFjfErovPIXV6u5Psi2H90sgDZxHdIjY_cij2FwX-3mI5zh58SbNWfq9MjRhffJ8AGV12HQwqie2ez67P-SVy60lfc75vwND6Vbi_ZIKvnOQmlL1eW4", 600)}
               />
               <div className="absolute inset-0 bg-black/40 flex items-center p-6">
                 <h4 className="text-white font-extrabold text-xl">
@@ -179,7 +181,8 @@ export default async function Home() {
               <img
                 alt="Sashimi"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdsOIHjoc5PLzMNPzxX5ZVuz1YGFQz_GRWWzKbvoGSSbR-zeJXM7s53j5XJ364HefGZOSpJCgcfnFuNmJC5ClqQ6gA9I7idFKiCIHEwiu73uLuikokfw9dnqPkGgzWy9hznMS-cGhCZL9gCFWt-dvqJYR0Bi9qtGxKMNDxJNCXLT4lztUO9CkxG7LyH_PLrbX6K-Hh6s9VTv4S2Y_nONQ_ApmqaPOncd1WhlmJe-5W_h0XF24HU6ZWuHjgJWI4hHQ4jtqttCnk-F4"
+                loading="lazy"
+                src={optimizeImageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuAdsOIHjoc5PLzMNPzxX5ZVuz1YGFQz_GRWWzKbvoGSSbR-zeJXM7s53j5XJ364HefGZOSpJCgcfnFuNmJC5ClqQ6gA9I7idFKiCIHEwiu73uLuikokfw9dnqPkGgzWy9hznMS-cGhCZL9gCFWt-dvqJYR0Bi9qtGxKMNDxJNCXLT4lztUO9CkxG7LyH_PLrbX6K-Hh6s9VTv4S2Y_nONQ_ApmqaPOncd1WhlmJe-5W_h0XF24HU6ZWuHjgJWI4hHQ4jtqttCnk-F4", 600)}
               />
               <div className="absolute inset-0 bg-black/40 flex items-center p-6">
                 <h4 className="text-white font-extrabold text-xl">
@@ -213,9 +216,10 @@ export default async function Home() {
             {cat.banner && (
               <div className="mb-6 relative h-[120px] sm:h-[180px] md:h-[240px] w-full rounded-xl overflow-hidden border border-navy-700/50 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
                 <img
-                  src={cat.banner}
+                  src={optimizeImageUrl(cat.banner, 1600)}
                   alt={`Banner ${cat.name}`}
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-[1.02]"
+                  loading="lazy"
                 />
               </div>
             )}

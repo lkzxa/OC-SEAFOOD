@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface BlogPost {
   id: number;
@@ -67,7 +68,8 @@ export default function RelatedPostsSection({ excludeId, limit = 3 }: RelatedPos
               <img
                 alt={p.imageAlt || p.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                src={p.image || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
+                loading="lazy"
+                src={optimizeImageUrl(p.image, 600) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
               />
             </div>
             <div className="p-4 flex flex-col flex-1">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MOCK_BLOG_POSTS } from "@/data/mockData";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface BlogPost {
   id: number;
@@ -81,7 +82,8 @@ export default async function BlogPage() {
                 <img
                   alt={post.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  src={post.image || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
+                  loading="lazy"
+                  src={optimizeImageUrl(post.image, 800) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
                 />
               </Link>
 

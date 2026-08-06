@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { useState, useCallback } from "react";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface ProductCardProps {
   product: {
@@ -73,7 +74,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         <img
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          src={(product.image ? product.image.split(",")[0].trim() : "") || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500"}
+          loading="lazy"
+          src={optimizeImageUrl(product.image ? product.image.split(",")[0].trim() : "", 600) || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500"}
           onError={(e) => {
             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500";
           }}

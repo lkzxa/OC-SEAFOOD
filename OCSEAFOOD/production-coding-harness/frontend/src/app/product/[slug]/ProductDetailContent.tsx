@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/components/ProductCard";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 interface Category {
@@ -259,7 +260,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
                     ? "opacity-100 scale-100 z-10"
                     : "opacity-0 scale-95 pointer-events-none z-0"
                   }`}
-                src={imgUrl || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800"}
+                src={optimizeImageUrl(imgUrl, 1000) || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800"}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=800";
                 }}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { MOCK_BLOG_POSTS } from "@/data/mockData";
 import BlogSidebar from "@/components/BlogSidebar";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface BlogPost {
   id: number;
@@ -136,7 +137,7 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
               <img
                 alt={post.imageAlt || post.title}
                 className="w-full h-full object-cover"
-                src={post.image}
+                src={optimizeImageUrl(post.image, 1000)}
               />
             </div>
           )}

@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { removeVietnameseTones } from "@/utils/stringUtils";
 import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface Category {
   id: number;
@@ -276,7 +277,7 @@ function MenuContent() {
           {activeCategory?.banner && (
             <div className="relative h-[120px] sm:h-[180px] md:h-[240px] w-full rounded-xl overflow-hidden border border-navy-700/50 shadow-lg">
               <img
-                src={activeCategory.banner}
+                src={optimizeImageUrl(activeCategory.banner, 1600)}
                 alt={`Banner ${activeCategory.name}`}
                 className="w-full h-full object-cover"
               />

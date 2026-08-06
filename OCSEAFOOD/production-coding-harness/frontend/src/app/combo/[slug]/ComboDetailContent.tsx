@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { COMBOS, Combo } from "@/data/combos";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface ComboDetailContentProps {
   slug: string;
@@ -185,7 +186,7 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                     ? "opacity-100 scale-100 z-10" 
                     : "opacity-0 scale-95 pointer-events-none z-0"
                 }`}
-                src={imgUrl}
+                src={optimizeImageUrl(imgUrl, 1000)}
               />
             ))}
             {combo.discountBadge && (
@@ -407,7 +408,8 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                 <img
                   alt={c.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  src={c.image}
+                  loading="lazy"
+                  src={optimizeImageUrl(c.image, 600)}
                 />
                 {c.discountBadge && (
                   <div className="absolute top-4 right-4 bg-red-600 text-white font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-widest">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface Category {
   id: number;
@@ -195,7 +196,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
                 <img
                   alt={activeCategory.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  src={getBanner(activeCategory)}
+                  src={optimizeImageUrl(getBanner(activeCategory), 800)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent"></div>
               </div>

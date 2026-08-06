@@ -6,6 +6,7 @@ import { useCart } from "@/hooks/useCart";
 import { COMBOS, Combo } from "@/data/combos";
 import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 export default function ComboPage() {
   const { addItem } = useCart();
@@ -120,7 +121,7 @@ export default function ComboPage() {
           <img
             alt="Combo Tiệc Hải Sản Cao Cấp OCSEAFOOD"
             className="relative z-10 w-full aspect-square object-cover rounded-xl shadow-2xl border border-navy-700"
-            src="https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png"
+            src={optimizeImageUrl("https://res.cloudinary.com/dctuxpra6/image/upload/v1785424827/ocseafood/banners/jpheoccv6ajbjnlguexa.png", 1000)}
           />
         </div>
       </section>
@@ -152,7 +153,8 @@ export default function ComboPage() {
           <img
             alt="Combo 5 People Banner"
             className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105 opacity-70"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBBHLkq2w3agxLq3EKWMF18Mzp9G-sSQ2glvAgw53QI0wgWsi9cuZBiF45Whc49CjZXE8EY2qW5crU__HF61oW4YhtViRiHJx8kOEoEV1nG54_n6eRazex9U2rfN48swFLnNpzn3s4Hy7YK5zfZiaMS6f3YiDltj6J-TjAseC5ShWsXX-tl7EDYlsfW9s-6bVeA8FbeTs3R-Iq9KkVdS-80x7_tIEE1JP1rrqQ20q30lOQhPWzPwswFYRS2OPUVVJIlyskvREzY5M"
+            loading="lazy"
+            src={optimizeImageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuCBBHLkq2w3agxLq3EKWMF18Mzp9G-sSQ2glvAgw53QI0wgWsi9cuZBiF45Whc49CjZXE8EY2qW5crU__HF61oW4YhtViRiHJx8kOEoEV1nG54_n6eRazex9U2rfN48swFLnNpzn3s4Hy7YK5zfZiaMS6f3YiDltj6J-TjAseC5ShWsXX-tl7EDYlsfW9s-6bVeA8FbeTs3R-Iq9KkVdS-80x7_tIEE1JP1rrqQ20q30lOQhPWzPwswFYRS2OPUVVJIlyskvREzY5M", 1600)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-red-950/90 via-orange-950/60 to-transparent flex items-center p-6 md:p-10">
             <div className="max-w-xl space-y-4">
@@ -185,7 +187,8 @@ export default function ComboPage() {
                   <img
                     alt={combo.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    src={combo.image}
+                    loading="lazy"
+                    src={optimizeImageUrl(combo.image, 600)}
                   />
                   {combo.discountBadge && (
                     <div className="absolute top-4 right-4 bg-red-600 text-white font-extrabold px-3 py-1 rounded-full text-xs uppercase tracking-widest">

@@ -6,6 +6,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderHistoryStore } from "@/store/useOrderHistoryStore";
 import { vietnamLocations } from "@/utils/vietnamLocations";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface OrderResponse {
   id: number;
@@ -320,7 +321,7 @@ export default function CartPage() {
                 <div key={`${item.id}-${item.selectedWeight || ""}-${item.isCombo ? "combo" : "prod"}`} className="py-4 flex gap-4 first:pt-0 last:pb-0 items-center justify-between">
                   <div className="flex gap-4 items-center flex-1 min-w-0">
                     <img
-                      src={item.image ? item.image.split(",")[0].trim() : ""}
+                      src={optimizeImageUrl(item.image ? item.image.split(",")[0].trim() : "", 150)}
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg border border-navy-700 bg-navy-900"
                       // BUG-L04 fix: Fallback khi ảnh bị lỗi/404

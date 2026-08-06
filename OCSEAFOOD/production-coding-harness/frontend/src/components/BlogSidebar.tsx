@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface BlogPost {
   id: number;
@@ -88,7 +89,8 @@ export default function BlogSidebar({ excludeId }: BlogSidebarProps) {
                   <img
                     alt={p.imageAlt || p.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    src={p.image || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=200"}
+                    loading="lazy"
+                    src={optimizeImageUrl(p.image, 150) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=200"}
                   />
                 </div>
                 <div className="min-w-0">
