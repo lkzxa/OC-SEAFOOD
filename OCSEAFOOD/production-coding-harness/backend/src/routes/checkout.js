@@ -198,12 +198,18 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
         .filter(Boolean)
         .join(', ');
 
+      // Whether this order was placed by a logged-in registered customer or a guest checkout
+      const accountStatusLabel = createdOrder.userId
+        ? '✅ Đã có tài khoản'
+        : '🆕 Khách vãng lai (chưa có tài khoản)';
+
       // Telegram Message (HTML Supported)
       const telegramMsg = [
         `🔔 <b>CÓ ĐƠN HÀNG MỚI TỪ WEBSITE!</b> 🌊`,
         ``,
         `• <b>Mã đơn hàng:</b> <code>${createdOrder.code}</code>`,
         `• <b>Khách hàng:</b> ${createdOrder.fullName}`,
+        `• <b>Trạng thái tài khoản:</b> ${accountStatusLabel}`,
         `• <b>Số điện thoại:</b> ${createdOrder.phone}`,
         `• <b>Email:</b> ${createdOrder.email}`,
         `• <b>Địa chỉ:</b> ${address}`,
@@ -223,6 +229,7 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
         ``,
         `• Mã đơn hàng: ${createdOrder.code}`,
         `• Khách hàng: ${createdOrder.fullName}`,
+        `• Trạng thái tài khoản: ${accountStatusLabel}`,
         `• Số điện thoại: ${createdOrder.phone}`,
         `• Email: ${createdOrder.email}`,
         `• Địa chỉ: ${address}`,
@@ -245,7 +252,8 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
             code: createdOrder.code,
             email: createdOrder.email,
             fullName: createdOrder.fullName,
-            totalFinal: Number(createdOrder.totalFinal)
+            totalFinal: Number(createdOrder.totalFinal),
+            hasAccount: Boolean(createdOrder.userId)
           }
         }
       });

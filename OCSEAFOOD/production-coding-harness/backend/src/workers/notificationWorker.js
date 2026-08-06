@@ -217,6 +217,7 @@ async function processOutbox() {
             <p><strong>Order ID:</strong> ${payload.orderId}</p>
             <p><strong>Code:</strong> ${payload.code}</p>
             <p><strong>Customer Name:</strong> ${payload.fullName}</p>
+            <p><strong>Account Status:</strong> ${payload.hasAccount ? 'Registered Customer' : 'Guest (No Account)'}</p>
             <p><strong>Customer Email:</strong> ${payload.email}</p>
             <p><strong>Estimated Total:</strong> ${payload.totalFinal} VND</p>
             <p>Please log in to the admin dashboard to process this order and contact the customer.</p>
