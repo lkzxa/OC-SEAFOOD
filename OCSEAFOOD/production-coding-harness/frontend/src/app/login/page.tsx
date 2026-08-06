@@ -259,7 +259,7 @@ function LoginContent() {
           <img
             alt="ỐC SEAFOOD Logo"
             className="absolute inset-0 w-full h-full object-contain p-16 hover:scale-105 transition-transform duration-700"
-            src="/logo.png"
+            src="/logo_chuan.png"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-navy-950/20 via-navy-950/40 to-navy-950/90"></div>
 

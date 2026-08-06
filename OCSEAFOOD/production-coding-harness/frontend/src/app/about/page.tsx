@@ -29,8 +29,8 @@ export default function AboutPage() {
         <div className="aspect-video lg:aspect-square rounded-lg overflow-hidden bg-navy-900 border border-navy-700">
           <img
             alt="OCSEAFOOD Seafood Selection"
-            className="w-full h-full object-cover"
-            src="/banner.png"
+            className="w-full h-full object-contain"
+            src="/logo_chuan.png"
           />
         </div>
       </section>
