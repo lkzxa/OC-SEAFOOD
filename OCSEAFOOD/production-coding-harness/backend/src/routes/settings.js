@@ -3,7 +3,8 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
-const { sendTelegramMessage, sendZaloMessage } = require('../workers/notificationWorker');
+const { sendTelegramMessage, sendZaloMessage, createMailTransporter } = require('../workers/notificationWorker');
+const env = require('../config/env');
 
 // Helper to get all settings as key-value
 async function getSettingsMap() {
@@ -61,6 +62,12 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
       RECRUITMENT_TELEGRAM_CHAT_ID: settings['RECRUITMENT_TELEGRAM_CHAT_ID'] || '',
       ZALO_OA_ACCESS_TOKEN: settings['ZALO_OA_ACCESS_TOKEN'] || '',
       ZALO_USER_ID: settings['ZALO_USER_ID'] || '',
+      SMTP_HOST: settings['SMTP_HOST'] || '',
+      SMTP_PORT: settings['SMTP_PORT'] || '',
+      SMTP_USER: settings['SMTP_USER'] || '',
+      SMTP_PASS: settings['SMTP_PASS'] || '',
+      SMTP_SECURE: settings['SMTP_SECURE'] === 'true',
+      EMAIL_FROM: settings['EMAIL_FROM'] || '',
       HOMEPAGE_ANNOUNCEMENT_ENABLED: settings['HOMEPAGE_ANNOUNCEMENT_ENABLED'] === 'true',
       HOMEPAGE_ANNOUNCEMENT_CONTENT: settings['HOMEPAGE_ANNOUNCEMENT_CONTENT'] || '',
       CONTACT_HOTLINE: settings['CONTACT_HOTLINE'] || '',
@@ -82,6 +89,12 @@ router.put('/', auth, authorize('ADMIN'), async (req, res, next) => {
       RECRUITMENT_TELEGRAM_CHAT_ID,
       ZALO_OA_ACCESS_TOKEN,
       ZALO_USER_ID,
+      SMTP_HOST,
+      SMTP_PORT,
+      SMTP_USER,
+      SMTP_PASS,
+      SMTP_SECURE,
+      EMAIL_FROM,
       HOMEPAGE_ANNOUNCEMENT_ENABLED,
       HOMEPAGE_ANNOUNCEMENT_CONTENT,
       CONTACT_HOTLINE,
@@ -96,6 +109,12 @@ router.put('/', auth, authorize('ADMIN'), async (req, res, next) => {
       RECRUITMENT_TELEGRAM_CHAT_ID: RECRUITMENT_TELEGRAM_CHAT_ID || '',
       ZALO_OA_ACCESS_TOKEN: ZALO_OA_ACCESS_TOKEN || '',
       ZALO_USER_ID: ZALO_USER_ID || '',
+      SMTP_HOST: SMTP_HOST || '',
+      SMTP_PORT: SMTP_PORT || '',
+      SMTP_USER: SMTP_USER || '',
+      SMTP_PASS: SMTP_PASS || '',
+      SMTP_SECURE: SMTP_SECURE ? 'true' : 'false',
+      EMAIL_FROM: EMAIL_FROM || '',
       HOMEPAGE_ANNOUNCEMENT_ENABLED: HOMEPAGE_ANNOUNCEMENT_ENABLED ? 'true' : 'false',
       HOMEPAGE_ANNOUNCEMENT_CONTENT: HOMEPAGE_ANNOUNCEMENT_CONTENT || '',
       CONTACT_HOTLINE: CONTACT_HOTLINE || '',
@@ -172,6 +191,38 @@ router.post('/test-zalo', auth, authorize('ADMIN'), async (req, res, next) => {
 
     await sendZaloMessage(accessToken, userId, '🔔 Đây là tin nhắn kiểm tra kết nối từ trang quản trị OCSEAFOOD!');
     return res.status(200).json({ status: 'success', message: 'Test message sent successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /settings/test-email - Send test email via SMTP (Admin only)
+router.post('/test-email', auth, authorize('ADMIN'), async (req, res, next) => {
+  try {
+    const settings = await getSettingsMap();
+    const smtpSettings = {
+      host: settings['SMTP_HOST'] || env.SMTP_HOST,
+      port: parseInt(settings['SMTP_PORT'], 10) || env.SMTP_PORT,
+      user: settings['SMTP_USER'] || env.SMTP_USER,
+      pass: settings['SMTP_PASS'] || env.SMTP_PASS,
+      secure: settings['SMTP_SECURE'] ? settings['SMTP_SECURE'] === 'true' : env.SMTP_SECURE,
+    };
+    const emailFrom = settings['EMAIL_FROM'] || env.EMAIL_FROM;
+
+    if (!smtpSettings.host || !smtpSettings.user || !smtpSettings.pass) {
+      return res.status(400).json({ error: { message: 'SMTP configuration is missing', status: 400 } });
+    }
+
+    const to = req.user.email || env.EMAIL_TO_ADMIN;
+    const transporter = createMailTransporter(smtpSettings);
+    await transporter.sendMail({
+      from: emailFrom,
+      to,
+      subject: '[OCSEAFOOD] Email kiểm tra kết nối SMTP',
+      html: '<p>🔔 Đây là email kiểm tra kết nối từ trang quản trị OCSEAFOOD!</p>',
+    });
+
+    return res.status(200).json({ status: 'success', message: 'Test email sent successfully' });
   } catch (err) {
     next(err);
   }

@@ -7,10 +7,13 @@ let intervalId = null;
 let isProcessing = false;
 
 /**
- * Creates nodemailer transport. Falls back to console log mock if credentials are not present.
+ * Creates nodemailer transport from a resolved SMTP settings object
+ * ({ host, port, user, pass, secure }). Falls back to console log mock if credentials are not present.
  */
-function createMailTransporter() {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS) {
+function createMailTransporter(smtpSettings) {
+  const { host, port, user, pass, secure } = smtpSettings || {};
+
+  if (!host || !user || !pass) {
     console.warn('⚠️ SMTP credentials not fully configured. Email notifications will be printed to console.');
     return {
       sendMail: async (mailOptions) => {
@@ -27,12 +30,12 @@ ${mailOptions.text || mailOptions.html}
   }
 
   return nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT,
-    secure: env.SMTP_SECURE,
+    host,
+    port,
+    secure,
     auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS
+      user,
+      pass
     }
   });
 }
@@ -171,6 +174,14 @@ async function processOutbox() {
   const telegramChatId = settingsMap['TELEGRAM_CHAT_ID'] || env.TELEGRAM_CHAT_ID;
   const zaloAccessToken = settingsMap['ZALO_OA_ACCESS_TOKEN'] || env.ZALO_OA_ACCESS_TOKEN;
   const zaloUserId = settingsMap['ZALO_USER_ID'] || env.ZALO_USER_ID;
+  const smtpSettings = {
+    host: settingsMap['SMTP_HOST'] || env.SMTP_HOST,
+    port: parseInt(settingsMap['SMTP_PORT'], 10) || env.SMTP_PORT,
+    user: settingsMap['SMTP_USER'] || env.SMTP_USER,
+    pass: settingsMap['SMTP_PASS'] || env.SMTP_PASS,
+    secure: settingsMap['SMTP_SECURE'] ? settingsMap['SMTP_SECURE'] === 'true' : env.SMTP_SECURE,
+  };
+  const emailFrom = settingsMap['EMAIL_FROM'] || env.EMAIL_FROM;
 
   // Retrieve pending outbox logs.
   // Note: Only query records with PENDING status. FAILED notifications have reached maxRetries.
@@ -209,7 +220,7 @@ async function processOutbox() {
       if (record.type === 'EMAIL') {
         const payload = record.payload;
         const mailOptions = {
-          from: env.EMAIL_FROM,
+          from: payload.from || emailFrom,
           to: payload.to || env.EMAIL_TO_ADMIN,
           subject: payload.subject || `[OCSEAFOOD] New Order Request: ${payload.code}`,
           html: payload.html || `
@@ -224,7 +235,7 @@ async function processOutbox() {
           `
         };
 
-        const transporter = createMailTransporter();
+        const transporter = createMailTransporter(smtpSettings);
         await transporter.sendMail(mailOptions);
       } else if (record.type === 'TELEGRAM') {
         const payload = record.payload;

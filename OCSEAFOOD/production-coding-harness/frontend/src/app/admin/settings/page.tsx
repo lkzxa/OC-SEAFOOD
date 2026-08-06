@@ -18,6 +18,12 @@ export default function AdminSettingsPage() {
   const [recruitmentTelegramChatId, setRecruitmentTelegramChatId] = useState("");
   const [zaloToken, setZaloToken] = useState("");
   const [zaloUserId, setZaloUserId] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPass, setSmtpPass] = useState("");
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [emailFrom, setEmailFrom] = useState("");
   const [contactHotline, setContactHotline] = useState("");
   const [contactZalo, setContactZalo] = useState("");
   const [contactFacebook, setContactFacebook] = useState("");
@@ -28,9 +34,11 @@ export default function AdminSettingsPage() {
   const [testingTelegram, setTestingTelegram] = useState(false);
   const [testingRecruitmentTelegram, setTestingRecruitmentTelegram] = useState(false);
   const [testingZalo, setTestingZalo] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
   const [showTelegramToken, setShowTelegramToken] = useState(false);
   const [showRecruitmentTelegramToken, setShowRecruitmentTelegramToken] = useState(false);
   const [showZaloToken, setShowZaloToken] = useState(false);
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
   const [announcementContent, setAnnouncementContent] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -74,6 +82,12 @@ export default function AdminSettingsPage() {
         setRecruitmentTelegramChatId(data.RECRUITMENT_TELEGRAM_CHAT_ID || "");
         setZaloToken(data.ZALO_OA_ACCESS_TOKEN || "");
         setZaloUserId(data.ZALO_USER_ID || "");
+        setSmtpHost(data.SMTP_HOST || "");
+        setSmtpPort(data.SMTP_PORT || "");
+        setSmtpUser(data.SMTP_USER || "");
+        setSmtpPass(data.SMTP_PASS || "");
+        setSmtpSecure(!!data.SMTP_SECURE);
+        setEmailFrom(data.EMAIL_FROM || "");
         setAnnouncementEnabled(!!data.HOMEPAGE_ANNOUNCEMENT_ENABLED);
         setAnnouncementContent(data.HOMEPAGE_ANNOUNCEMENT_CONTENT || "");
         setContactHotline(data.CONTACT_HOTLINE || "");
@@ -109,6 +123,12 @@ export default function AdminSettingsPage() {
           RECRUITMENT_TELEGRAM_CHAT_ID: recruitmentTelegramChatId,
           ZALO_OA_ACCESS_TOKEN: zaloToken,
           ZALO_USER_ID: zaloUserId,
+          SMTP_HOST: smtpHost,
+          SMTP_PORT: smtpPort,
+          SMTP_USER: smtpUser,
+          SMTP_PASS: smtpPass,
+          SMTP_SECURE: smtpSecure,
+          EMAIL_FROM: emailFrom,
           HOMEPAGE_ANNOUNCEMENT_ENABLED: announcementEnabled,
           HOMEPAGE_ANNOUNCEMENT_CONTENT: announcementContent,
           CONTACT_HOTLINE: contactHotline,
@@ -193,6 +213,28 @@ export default function AdminSettingsPage() {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Đã có lỗi xảy ra" });
     } finally {
       setTestingZalo(false);
+    }
+  };
+
+  const testEmail = async () => {
+    setTestingEmail(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/settings/test-email", {
+        method: "POST",
+        headers: getAuthHeaders(token),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error?.message || "Gửi thử Email thất bại.");
+      }
+
+      setMessage({ type: "success", text: "Email kiểm tra kết nối đã được gửi!" });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Đã có lỗi xảy ra" });
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -412,6 +454,112 @@ export default function AdminSettingsPage() {
                       className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
                     >
                       {testingZalo ? "Đang gửi..." : "Gửi thử Zalo"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Email (SMTP) Settings */}
+                <div className="space-y-4 pt-6 border-t border-navy-900">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                    <span className="w-1.5 h-4 bg-orange-500 rounded-sm"></span>
+                    Email (SMTP) Notification
+                  </h3>
+
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                          SMTP Host
+                        </label>
+                        <input
+                          type="text"
+                          value={smtpHost}
+                          onChange={(e) => setSmtpHost(e.target.value)}
+                          placeholder="smtp.gmail.com"
+                          className="admin-input"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                          SMTP Port
+                        </label>
+                        <input
+                          type="text"
+                          value={smtpPort}
+                          onChange={(e) => setSmtpPort(e.target.value)}
+                          placeholder="587"
+                          className="admin-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                        SMTP User (Email gửi đi)
+                      </label>
+                      <input
+                        type="text"
+                        value={smtpUser}
+                        onChange={(e) => setSmtpUser(e.target.value)}
+                        placeholder="thanhloidang45@gmail.com"
+                        className="admin-input"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                        SMTP Password (Mật khẩu ứng dụng Gmail)
+                      </label>
+                      <div className="relative flex items-center bg-navy-850 border border-navy-700/60 rounded-xl px-4 py-1.5 focus-within:border-orange-500 transition-colors">
+                        <input
+                          type={showSmtpPass ? "text" : "password"}
+                          value={smtpPass}
+                          onChange={(e) => setSmtpPass(e.target.value)}
+                          placeholder="Mật khẩu ứng dụng SMTP"
+                          className="bg-transparent border-none text-slate-200 text-sm w-full py-1.5 focus:outline-none focus:ring-0 placeholder:text-slate-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpPass(!showSmtpPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center p-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-lg select-none">
+                            {showSmtpPass ? "visibility_off" : "visibility"}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                        Email From (Tên hiển thị + Email)
+                      </label>
+                      <input
+                        type="text"
+                        value={emailFrom}
+                        onChange={(e) => setEmailFrom(e.target.value)}
+                        placeholder='"ỐC SEAFOOD" <thanhloidang45@gmail.com>'
+                        className="admin-input"
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={smtpSecure}
+                        onChange={(e) => setSmtpSecure(e.target.checked)}
+                        className="rounded bg-navy-800 border-navy-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-navy-900"
+                      />
+                      SMTP Secure (bật nếu dùng port 465)
+                    </label>
+
+                    <button
+                      type="button"
+                      disabled={testingEmail || !smtpHost || !smtpUser || !smtpPass}
+                      onClick={testEmail}
+                      className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
+                    >
+                      {testingEmail ? "Đang gửi..." : "Gửi thử Email"}
                     </button>
                   </div>
                 </div>

@@ -102,7 +102,7 @@ describe('Virtual Checkout API - POST /checkout', () => {
 
     expect(res.body.userId).toBeNull();
     expect(prisma.order.create).toHaveBeenCalled();
-    expect(prisma.notificationOutbox.create).toHaveBeenCalledTimes(3); // EMAIL, TELEGRAM & ZALO
+    expect(prisma.notificationOutbox.create).toHaveBeenCalledTimes(4); // EMAIL (admin), TELEGRAM, ZALO & EMAIL (customer)
   });
 
   it('should successfully checkout as a Customer and link userId', async () => {

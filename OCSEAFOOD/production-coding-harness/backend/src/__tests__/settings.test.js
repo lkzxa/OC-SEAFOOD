@@ -112,6 +112,12 @@ describe('System Settings API - /settings', () => {
         RECRUITMENT_TELEGRAM_CHAT_ID: '',
         ZALO_OA_ACCESS_TOKEN: '',
         ZALO_USER_ID: '',
+        SMTP_HOST: '',
+        SMTP_PORT: '',
+        SMTP_USER: '',
+        SMTP_PASS: '',
+        SMTP_SECURE: false,
+        EMAIL_FROM: '',
         HOMEPAGE_ANNOUNCEMENT_ENABLED: true,
         HOMEPAGE_ANNOUNCEMENT_CONTENT: 'Voucher 30%',
         CONTACT_HOTLINE: '',
@@ -144,7 +150,7 @@ describe('System Settings API - /settings', () => {
         .send(payload)
         .expect(200);
 
-      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(11);
+      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(17);
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { key: 'TELEGRAM_BOT_TOKEN' },
