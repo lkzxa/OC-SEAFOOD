@@ -536,291 +536,268 @@ export default function AdminOrdersPage() {
           </div>
         )}
 
-        <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center justify-between gap-4 mb-5">
-            <h2 className="text-lg font-bold text-slate-100">Danh sách đơn hàng</h2>
-            <span className="text-xs text-slate-400">
-              {loading ? "Đang tải..." : `Trang ${pagination.page}/${pagination.totalPages}`}
-            </span>
-          </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
+          {/* Left: Order detail / edit panel */}
+          <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl h-fit">
+            {selectedOrder && selectedDraft ? (
+              <div className="space-y-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.35em] text-slate-400">
+                      Chỉnh sửa đơn hàng
+                    </p>
+                    <h2 className="text-2xl font-black text-slate-100 mt-1">{selectedOrder.code}</h2>
+                    <p className="text-sm text-slate-400 mt-1">
+                      {selectedOrder.fullName} · {selectedOrder.phone}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeOrderEditor}
+                    className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-orange-400"
+                  >
+                    Đóng
+                  </button>
+                </div>
 
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <article key={order.id} className="rounded-xl border border-navy-800 bg-navy-900 p-5">
-                <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-lg font-black text-slate-100">{order.code}</h3>
-                      <span
-                        className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusClass(order.status)}`}
+                {orderSuccessMsg && (
+                  <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-lg">
+                    {orderSuccessMsg}
+                  </div>
+                )}
+
+                <form onSubmit={saveOrderChanges} className="space-y-6">
+                  <div className="space-y-4">
+                    <Field label="Trạng thái">
+                      <select
+                        className="admin-input"
+                        value={selectedDraft.status}
+                        onChange={(e) =>
+                          setSelectedDraft((current) =>
+                            current ? { ...current, status: e.target.value as OrderStatus } : current
+                          )
+                        }
                       >
-                        {statusLabel(order.status)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400">{formatDateTime(order.createdAt)}</p>
-                    <p className="text-sm text-slate-300">
-                      <span className="text-slate-500">Khách:</span> {order.fullName}
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      <span className="text-slate-500">Liên hệ:</span> {order.phone} · {order.email}
-                    </p>
-                    <p className="text-sm text-slate-300">
-                      <span className="text-slate-500">Địa chỉ:</span> {order.streetAddress}, {order.ward}, {order.district}, {order.province}
-                    </p>
-                    {order.note ? (
-                      <p className="text-sm text-slate-400">
-                        <span className="text-slate-500">Ghi chú:</span> {order.note}
-                      </p>
-                    ) : null}
+                        <option value="PENDING">Chờ tư vấn</option>
+                        <option value="CONFIRMED">Đã xác nhận</option>
+                        <option value="CANCELLED">Đã hủy</option>
+                      </select>
+                    </Field>
+                    <Field label="Tổng tiền đề xuất">
+                      <input
+                        className="admin-input"
+                        value={formatCurrency(computeDraftTotal(selectedDraft.items))}
+                        readOnly
+                      />
+                    </Field>
+                    <Field label="Ghi chú">
+                      <input
+                        className="admin-input"
+                        value={selectedDraft.note}
+                        onChange={(e) =>
+                          setSelectedDraft((current) => (current ? { ...current, note: e.target.value } : current))
+                        }
+                      />
+                    </Field>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-slate-400">Tổng tiền</p>
-                    <p className="text-2xl font-black text-orange-500">{formatCurrency(order.totalFinal)}</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {order.orderItems?.length || 0} sản phẩm
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => openOrderEditor(order)}
-                    className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-lg"
-                  >
-                    Chỉnh sửa giá
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openOrderEditor(order)}
-                    className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-lg"
-                  >
-                    Xem chi tiết
-                  </button>
-                </div>
-
-                {order.orderItems && order.orderItems.length > 0 ? (
-                  <div className="mt-4 border-t border-navy-800 pt-4 space-y-2">
+                  <div className="space-y-3">
                     <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                      Sản phẩm trong đơn
+                      Chỉnh sửa sản phẩm trong đơn
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {order.orderItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-navy-800 bg-navy-950/80 px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-100 truncate">
-                              {item.productName}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {item.quantity} x {item.productUnit}
+                    <div className="space-y-3">
+                      {selectedDraft.items.map((item) => (
+                        <div key={item.id} className="rounded-xl border border-navy-800 bg-navy-900 p-4">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div>
+                              <h3 className="font-semibold text-slate-100">{item.productName}</h3>
+                              <p className="text-xs text-slate-500">{item.productUnit}</p>
+                            </div>
+                            <p className="text-sm font-bold text-orange-400">
+                              {formatCurrency(Number(item.priceFinal) * Number(item.quantity))}
                             </p>
                           </div>
-                          <p className="text-sm font-bold text-slate-300">
-                            {formatCurrency(item.totalFinal)}
-                          </p>
+                          <div className="grid grid-cols-1 gap-4">
+                            <Field label="Số lượng">
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                className="admin-input"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  updateDraftItem(item.id, { quantity: Number(e.target.value) })
+                                }
+                              />
+                            </Field>
+                            <Field label="Đơn giá cuối">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1000"
+                                className="admin-input"
+                                value={item.priceFinal}
+                                onChange={(e) =>
+                                  updateDraftItem(item.id, { priceFinal: e.target.value })
+                                }
+                              />
+                            </Field>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-                ) : null}
-              </article>
-            ))}
 
-            {!loading && orders.length === 0 && (
-              <div className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-8 text-center">
-                Không có đơn hàng phù hợp.
+                  <button
+                    type="submit"
+                    disabled={savingOrder}
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50"
+                  >
+                    {savingOrder ? "Đang lưu..." : "Lưu thay đổi đơn hàng"}
+                  </button>
+                </form>
+
+                <div className="border-t border-navy-800 pt-6 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                        Nhật ký thay đổi
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Hiển thị các chỉnh sửa vừa lưu trên giao diện này.
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-400">{selectedAudits.length} mục</span>
+                  </div>
+
+                  {selectedAudits.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedAudits.map((entry) => (
+                        <div key={entry.id} className="rounded-xl border border-navy-800 bg-navy-900 p-4 text-sm">
+                          <div className="flex items-center justify-between gap-4 mb-2">
+                            <p className="font-bold text-slate-100">{entry.orderCode}</p>
+                            <p className="text-xs text-slate-500">{formatDateTime(entry.createdAt)}</p>
+                          </div>
+                          <p className="text-slate-400 text-xs uppercase tracking-widest mb-2">
+                            {entry.changedFields.join(", ")}
+                          </p>
+                          <div className="bg-navy-950 rounded-xl border border-navy-800 p-4">
+                            {renderAuditDiff(entry)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-6">
+                      Chưa có nhật ký thay đổi cho đơn này.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-16 text-slate-400">
+                <span className="material-symbols-outlined text-4xl text-slate-600 mb-3 select-none">
+                  receipt_long
+                </span>
+                <p className="text-sm">Chọn một đơn hàng từ bảng bên phải để xem chi tiết.</p>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-navy-800">
-            <p className="text-xs text-slate-400">
-              Tổng số: {pagination.total} đơn
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => goToPage(pagination.page - 1)}
-                disabled={loading || pagination.page <= 1}
-                className="px-4 py-2 rounded-lg border border-navy-700 bg-navy-800 text-slate-200 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
-              >
-                Trước
-              </button>
+          {/* Right: Orders table */}
+          <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-lg font-bold text-slate-100">Danh sách đơn hàng</h2>
               <span className="text-xs text-slate-400">
-                {pagination.page}/{pagination.totalPages}
+                {loading ? "Đang tải..." : `Trang ${pagination.page}/${pagination.totalPages}`}
               </span>
-              <button
-                type="button"
-                onClick={() => goToPage(pagination.page + 1)}
-                disabled={loading || pagination.page >= pagination.totalPages}
-                className="px-4 py-2 rounded-lg border border-navy-700 bg-navy-800 text-slate-200 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
-              >
-                Sau
-              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left text-sm text-slate-300">
+                <thead>
+                  <tr className="border-b border-navy-800 text-slate-400 text-xs font-extrabold uppercase tracking-widest">
+                    <th className="py-3 px-4">Mã đơn</th>
+                    <th className="py-3 px-4">Khách hàng</th>
+                    <th className="py-3 px-4">Tổng tiền</th>
+                    <th className="py-3 px-4">Trạng thái</th>
+                    <th className="py-3 px-4">Ngày tạo</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy-800/60">
+                  {orders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className={`hover:bg-navy-900/30 transition-colors ${
+                        selectedOrderId === order.id ? "bg-navy-900/40" : ""
+                      }`}
+                    >
+                      <td className="py-3 px-4 font-bold text-slate-100">{order.code}</td>
+                      <td className="py-3 px-4 max-w-[180px]">
+                        <div className="font-semibold text-slate-200 truncate">{order.fullName}</div>
+                        <div className="text-xs text-slate-500 truncate">{order.phone}</div>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-orange-400">{formatCurrency(order.totalFinal)}</td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusClass(order.status)}`}
+                        >
+                          {statusLabel(order.status)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-xs text-slate-400">{formatDateTime(order.createdAt)}</td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => openOrderEditor(order)}
+                          className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer"
+                        >
+                          Chỉnh sửa giá
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {!loading && orders.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-8 text-center">
+                        Không có đơn hàng phù hợp.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 pt-4 border-t border-navy-800">
+              <p className="text-xs text-slate-400">
+                Tổng số: {pagination.total} đơn
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => goToPage(pagination.page - 1)}
+                  disabled={loading || pagination.page <= 1}
+                  className="px-4 py-2 rounded-lg border border-navy-700 bg-navy-800 text-slate-200 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
+                >
+                  Trước
+                </button>
+                <span className="text-xs text-slate-400">
+                  {pagination.page}/{pagination.totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToPage(pagination.page + 1)}
+                  disabled={loading || pagination.page >= pagination.totalPages}
+                  className="px-4 py-2 rounded-lg border border-navy-700 bg-navy-800 text-slate-200 text-xs font-bold uppercase tracking-widest disabled:opacity-40"
+                >
+                  Sau
+                </button>
+              </div>
             </div>
           </div>
         </div>
-
-        {selectedOrder && selectedDraft ? (
-          <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl space-y-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.35em] text-slate-400">
-                  Chỉnh sửa đơn hàng
-                </p>
-                <h2 className="text-2xl font-black text-slate-100 mt-1">{selectedOrder.code}</h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  {selectedOrder.fullName} · {selectedOrder.phone}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeOrderEditor}
-                className="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-orange-400"
-              >
-                Đóng
-              </button>
-            </div>
-
-            {orderSuccessMsg && (
-              <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm px-4 py-3 rounded-lg">
-                {orderSuccessMsg}
-              </div>
-            )}
-
-            <form onSubmit={saveOrderChanges} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field label="Trạng thái">
-                  <select
-                    className="admin-input"
-                    value={selectedDraft.status}
-                    onChange={(e) =>
-                      setSelectedDraft((current) =>
-                        current ? { ...current, status: e.target.value as OrderStatus } : current
-                      )
-                    }
-                  >
-                    <option value="PENDING">Chờ tư vấn</option>
-                    <option value="CONFIRMED">Đã xác nhận</option>
-                    <option value="CANCELLED">Đã hủy</option>
-                  </select>
-                </Field>
-                <Field label="Tổng tiền đề xuất">
-                  <input
-                    className="admin-input"
-                    value={formatCurrency(computeDraftTotal(selectedDraft.items))}
-                    readOnly
-                  />
-                </Field>
-                <Field label="Ghi chú">
-                  <input
-                    className="admin-input"
-                    value={selectedDraft.note}
-                    onChange={(e) =>
-                      setSelectedDraft((current) => (current ? { ...current, note: e.target.value } : current))
-                    }
-                  />
-                </Field>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                  Chỉnh sửa sản phẩm trong đơn
-                </p>
-                <div className="space-y-3">
-                  {selectedDraft.items.map((item) => (
-                    <div key={item.id} className="rounded-xl border border-navy-800 bg-navy-900 p-4">
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <div>
-                          <h3 className="font-semibold text-slate-100">{item.productName}</h3>
-                          <p className="text-xs text-slate-500">{item.productUnit}</p>
-                        </div>
-                        <p className="text-sm font-bold text-orange-400">
-                          {formatCurrency(Number(item.priceFinal) * Number(item.quantity))}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Field label="Số lượng">
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            className="admin-input"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateDraftItem(item.id, { quantity: Number(e.target.value) })
-                            }
-                          />
-                        </Field>
-                        <Field label="Đơn giá cuối">
-                          <input
-                            type="number"
-                            min="0"
-                            step="1000"
-                            className="admin-input"
-                            value={item.priceFinal}
-                            onChange={(e) =>
-                              updateDraftItem(item.id, { priceFinal: e.target.value })
-                            }
-                          />
-                        </Field>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={savingOrder}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50"
-              >
-                {savingOrder ? "Đang lưu..." : "Lưu thay đổi đơn hàng"}
-              </button>
-            </form>
-
-            <div className="border-t border-navy-800 pt-6 space-y-3">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Nhật ký thay đổi
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Hiển thị các chỉnh sửa vừa lưu trên giao diện này.
-                  </p>
-                </div>
-                <span className="text-xs text-slate-400">{selectedAudits.length} mục</span>
-              </div>
-
-              {selectedAudits.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedAudits.map((entry) => (
-                    <div key={entry.id} className="rounded-xl border border-navy-800 bg-navy-900 p-4 text-sm">
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <p className="font-bold text-slate-100">{entry.orderCode}</p>
-                        <p className="text-xs text-slate-500">{formatDateTime(entry.createdAt)}</p>
-                      </div>
-                      <p className="text-slate-400 text-xs uppercase tracking-widest mb-2">
-                        {entry.changedFields.join(", ")}
-                      </p>
-                      <div className="bg-navy-950 rounded-xl border border-navy-800 p-4">
-                        {renderAuditDiff(entry)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-slate-400 text-sm border border-dashed border-navy-700 rounded-xl p-6">
-                  Chưa có nhật ký thay đổi cho đơn này.
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
       </div>
     </AdminLayout>
   );
