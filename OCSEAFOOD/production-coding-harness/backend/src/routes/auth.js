@@ -8,37 +8,6 @@ const { signToken } = require('../utils/jwt');
 const { RegisterSchema, LoginSchema, ForgotPasswordSchema, ResetPasswordSchema } = require('../validation/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
 
-// Notify admin (via the same Telegram channel used for orders) when a new customer registers.
-// Best-effort: registration must still succeed even if this fails, so errors are only logged.
-async function notifyNewCustomerRegistration(user, method) {
-  try {
-    const registeredAt = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-    const message = [
-      `🎉 <b>KHÁCH HÀNG MỚI ĐĂNG KÝ!</b> 🌊`,
-      ``,
-      `• <b>Tên:</b> ${user.name}`,
-      `• <b>Email:</b> ${user.email}`,
-      `• <b>Phương thức:</b> ${method}`,
-      `• <b>Thời gian:</b> ${registeredAt}`,
-      ``,
-      `👉 <i>Cân nhắc gửi ưu đãi chào mừng cho khách hàng mới.</i>`
-    ].join('\n');
-
-    await prisma.notificationOutbox.create({
-      data: {
-        type: 'TELEGRAM',
-        payload: {
-          userId: user.id,
-          email: user.email,
-          message
-        }
-      }
-    });
-  } catch (err) {
-    console.error('⚠️ Failed to queue new-registration Telegram notification:', err.message);
-  }
-}
-
 // POST /auth/register - Register a new user (BUG-C03 fix: rate limited)
 router.post('/register', authRateLimiter, async (req, res, next) => {
   try {
@@ -79,8 +48,6 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
         role: 'CUSTOMER' // Security: role is always CUSTOMER on registration
       }
     });
-
-    await notifyNewCustomerRegistration(user, 'Email/Mật khẩu');
 
     // Strip password field before responding
     const { password: _, ...userWithoutPassword } = user;
@@ -288,8 +255,6 @@ router.post('/google', authRateLimiter, async (req, res, next) => {
             role: 'CUSTOMER'
           }
         });
-
-        await notifyNewCustomerRegistration(user, 'Google');
       }
     }
 
