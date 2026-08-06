@@ -36,7 +36,12 @@ ${mailOptions.text || mailOptions.html}
     auth: {
       user,
       pass
-    }
+    },
+    // Fail fast instead of hanging for minutes (nodemailer defaults are very long)
+    // on a wrong host/port/secure combination.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 }
 
