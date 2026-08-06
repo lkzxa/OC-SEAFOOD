@@ -255,15 +255,18 @@ function LoginContent() {
       <div className="flex flex-col md:flex-row bg-navy-950 rounded-2xl overflow-hidden shadow-2xl border border-navy-700/50 max-w-[1200px] mx-auto min-h-[680px]">
 
         {/* Left side: Premium Image Banner */}
-        <div className="hidden md:block md:w-1/2 relative min-h-[600px] overflow-hidden bg-navy-900">
-          <img
-            alt="ỐC SEAFOOD Logo"
-            className="absolute inset-0 w-full h-full object-contain p-16 hover:scale-105 transition-transform duration-700"
-            src="/logo_chuan.png"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-navy-950/20 via-navy-950/40 to-navy-950/90"></div>
+        <div className="hidden md:flex md:flex-col md:w-1/2 min-h-[600px] overflow-hidden bg-navy-900">
+          {/* Logo area — plain navy background, no overlay tint */}
+          <div className="flex-1 flex items-center justify-center p-16">
+            <img
+              alt="ỐC SEAFOOD Logo"
+              className="w-full h-full object-contain hover:scale-105 transition-transform duration-700"
+              src="/logo_chuan.png"
+            />
+          </div>
 
-          <div className="absolute bottom-12 left-12 right-12 z-10 space-y-4">
+          {/* Text panel — solid background, fully separate from the logo area */}
+          <div className="bg-navy-950 border-t border-navy-800 shadow-[0_-8px_20px_rgba(0,0,0,0.3)] px-12 py-8 space-y-4">
             <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-widest">
               OCSEAFOOD Premium
             </span>
