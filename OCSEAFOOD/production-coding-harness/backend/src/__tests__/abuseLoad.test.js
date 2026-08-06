@@ -33,6 +33,8 @@ jest.mock('../middleware/rateLimiter', () => {
       next();
     },
     testCheckoutRateLimiter: (req, res, next) => next(),
+    recruitmentRateLimiter: (req, res, next) => next(),
+    testRecruitmentRateLimiter: (req, res, next) => next(),
   };
 });
 

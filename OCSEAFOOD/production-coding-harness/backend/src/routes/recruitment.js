@@ -3,8 +3,11 @@ const router = express.Router();
 const prisma = require('../config/prisma');
 const { validateBody } = require('../middleware/validate');
 const { RecruitmentSchema } = require('../validation/recruitment');
+const { recruitmentRateLimiter, testRecruitmentRateLimiter } = require('../middleware/rateLimiter');
 
-router.post('/', validateBody(RecruitmentSchema), async (req, res, next) => {
+const limiter = process.env.NODE_ENV === 'test' ? testRecruitmentRateLimiter : recruitmentRateLimiter;
+
+router.post('/', limiter, validateBody(RecruitmentSchema), async (req, res, next) => {
   try {
     const { fullName, phone, email, position, intro } = req.body;
 

@@ -37,6 +37,8 @@ jest.mock('../middleware/rateLimiter', () => ({
   checkoutRateLimiter: (req, res, next) => next(),
   testAuthRateLimiter: (req, res, next) => next(),
   testCheckoutRateLimiter: (req, res, next) => next(),
+  recruitmentRateLimiter: (req, res, next) => next(),
+  testRecruitmentRateLimiter: (req, res, next) => next(),
 }));
 
 describe('Combos API & Checkout Integration', () => {

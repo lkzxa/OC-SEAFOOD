@@ -34,6 +34,17 @@ const checkoutRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// 5 requests per 15 minutes on the recruitment (CV submission) endpoint
+const recruitmentRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Too many requests, please try again later',
+  statusCode: 429,
+  handler: rateLimitHandler,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Fast limiters for test suite (3 requests per second)
 const testAuthRateLimiter = rateLimit({
   windowMs: 1000,
@@ -55,9 +66,21 @@ const testCheckoutRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const testRecruitmentRateLimiter = rateLimit({
+  windowMs: 1000,
+  max: 3,
+  message: 'Too many requests, please try again later',
+  statusCode: 429,
+  handler: rateLimitHandler,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 module.exports = {
   authRateLimiter,
   checkoutRateLimiter,
+  recruitmentRateLimiter,
   testAuthRateLimiter,
   testCheckoutRateLimiter,
+  testRecruitmentRateLimiter,
 };

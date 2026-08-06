@@ -19,7 +19,9 @@ jest.mock('../middleware/rateLimiter', () => {
         });
       }
       next();
-    }
+    },
+    recruitmentRateLimiter: (req, res, next) => next(),
+    testRecruitmentRateLimiter: (req, res, next) => next()
   };
 });
 
