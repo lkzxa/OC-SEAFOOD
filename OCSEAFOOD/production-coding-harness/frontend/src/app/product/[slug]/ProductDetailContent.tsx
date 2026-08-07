@@ -276,7 +276,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
                 <button
                   type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
                   aria-label="Previous image"
                 >
                   <span className="material-symbols-outlined select-none text-lg">chevron_left</span>
@@ -284,7 +284,7 @@ export default function ProductDetailContent({ slug }: ProductDetailContentProps
                 <button
                   type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev + 1) % images.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
                   aria-label="Next image"
                 >
                   <span className="material-symbols-outlined select-none text-lg">chevron_right</span>
