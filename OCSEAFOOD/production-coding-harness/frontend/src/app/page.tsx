@@ -81,12 +81,19 @@ async function getPublicSettings(): Promise<PublicSettings> {
   }
 }
 
+// Curated best-sellers shown at the top of the homepage, by slug
+const BEST_SELLER_SLUGS = ["cua-king-do-nauy", "tom-hum-alaska", "bao-ngu-uc-ngoc-bich", "ca-bon-vang"];
+
 export default async function Home() {
   const [categories, products, publicSettings] = await Promise.all([
     getCategories(),
     getProducts(),
     getPublicSettings(),
   ]);
+
+  const bestSellers = BEST_SELLER_SLUGS
+    .map((slug) => products.find((p) => p.slug === slug && p.isVisible))
+    .filter((p): p is Product => Boolean(p));
 
   // Group products by category (supports many-to-many categoryIds), highest price first
   const productsByCategory = categories.reduce((acc, cat) => {
@@ -194,6 +201,22 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* BEST SELLERS */}
+      {bestSellers.length > 0 && (
+        <section className="mb-16">
+          <div className="flex items-center justify-between mb-6 border-b border-navy-700 pb-4">
+            <h2 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3 text-slate-100">
+              <span className="w-2 h-8 bg-orange-500"></span> Sản Phẩm Bán Chạy
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {bestSellers.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* DYNAMIC PRODUCT SECTIONS */}
       {categories.map((cat) => {
