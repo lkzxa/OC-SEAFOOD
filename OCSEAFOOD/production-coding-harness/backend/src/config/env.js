@@ -8,8 +8,8 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const envSchema = z.object({
   PORT: z.string().transform((val) => parseInt(val, 10)).default('5000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required').default(
-    process.env.NODE_ENV === 'test' ? 'testsecret' : undefined
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters long').default(
+    process.env.NODE_ENV === 'test' ? 'testsecret-testsecret-testsecret-testsecret' : undefined
   ),
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid connection string').default(
     process.env.NODE_ENV === 'test' ? 'postgresql://mockuser:mockpass@localhost:5432/mockdb' : undefined
