@@ -18,6 +18,9 @@ coverage/
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# Database backups — contain real customer data, never commit
+backend/backups/
+
 # IDE files
 .vscode/
 .idea/
