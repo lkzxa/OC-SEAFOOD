@@ -17,6 +17,7 @@ const navItems = [
   { href: "/admin/combos", label: "Quản lý combo", icon: "widgets" },
   { href: "/admin/orders", label: "Quản lý đơn hàng", icon: "receipt_long" },
   { href: "/admin/posts", label: "Quản lý bài viết", icon: "article" },
+  { href: "/admin/recruitment", label: "Quản lý tuyển dụng", icon: "work" },
   { href: "/admin/settings", label: "Cấu hình hệ thống", icon: "settings" },
   { href: "/admin/users", label: "Quản lý tài khoản", icon: "people" },
 ];

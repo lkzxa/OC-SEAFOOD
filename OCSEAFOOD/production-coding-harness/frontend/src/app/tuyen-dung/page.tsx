@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 
 interface JobOpening {
-  id: string;
+  id: number;
   title: string;
   quantity: number;
   salary: string;
@@ -13,9 +13,10 @@ interface JobOpening {
   requirements: string[];
 }
 
-const JOB_OPENINGS: JobOpening[] = [
+// Used only if the API is unreachable, so the page never renders empty
+const FALLBACK_JOB_OPENINGS: JobOpening[] = [
   {
-    id: "sale",
+    id: 1,
     title: "Nhân viên Tư vấn bán hàng (Online / Showroom)",
     quantity: 3,
     salary: "8.000.000 - 15.000.000 VND (Lương cứng + Hoa hồng)",
@@ -28,7 +29,7 @@ const JOB_OPENINGS: JobOpening[] = [
     ]
   },
   {
-    id: "chef",
+    id: 2,
     title: "Nhân viên Sơ chế & Chế biến hải sản",
     quantity: 2,
     salary: "9.000.000 - 12.000.000 VND (Hỗ trợ cơm trưa)",
@@ -41,7 +42,7 @@ const JOB_OPENINGS: JobOpening[] = [
     ]
   },
   {
-    id: "shipper",
+    id: 3,
     title: "Nhân viên Giao hàng siêu tốc (Shipper)",
     quantity: 5,
     salary: "10.000.000 - 14.000.000 VND (Hỗ trợ xăng xe)",
@@ -56,6 +57,25 @@ const JOB_OPENINGS: JobOpening[] = [
 ];
 
 export default function RecruitmentPage() {
+  const [jobOpenings, setJobOpenings] = useState<JobOpening[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/job-openings")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((json) => {
+        if (!isMounted) return;
+        const data: JobOpening[] = Array.isArray(json) ? json : (json.data ?? []);
+        setJobOpenings(data.length > 0 ? data : FALLBACK_JOB_OPENINGS);
+      })
+      .catch(() => {
+        if (isMounted) setJobOpenings(FALLBACK_JOB_OPENINGS);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Application Form States
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -223,7 +243,7 @@ export default function RecruitmentPage() {
         </div>
 
         <div className="space-y-6">
-          {JOB_OPENINGS.map((job) => (
+          {jobOpenings.map((job) => (
             <div
               key={job.id}
               className="bg-navy-800 border border-navy-700 rounded-xl p-6 md:p-8 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center hover:border-orange-500/20 transition-all"
@@ -386,7 +406,7 @@ export default function RecruitmentPage() {
                     required
                   >
                     <option value="" className="bg-navy-900 text-slate-300">-- Lựa chọn vị trí tuyển dụng --</option>
-                    {JOB_OPENINGS.map((job) => (
+                    {jobOpenings.map((job) => (
                       <option key={job.id} value={job.title} className="bg-navy-900 text-slate-300">
                         {job.title}
                       </option>

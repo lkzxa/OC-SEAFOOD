@@ -19,6 +19,7 @@ const orderRoutes = require('./routes/orders');
 const settingsRoutes = require('./routes/settings');
 const usersRoutes = require('./routes/users');
 const recruitmentRoutes = require('./routes/recruitment');
+const jobOpeningRoutes = require('./routes/jobOpenings');
 const uploadRoutes = require('./routes/upload');
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/orders', orderRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/users', usersRoutes);
 app.use('/recruitment', recruitmentRoutes);
+app.use('/job-openings', jobOpeningRoutes);
 app.use('/upload', uploadRoutes);
 
 // Phục vụ thư mục uploads ra public
