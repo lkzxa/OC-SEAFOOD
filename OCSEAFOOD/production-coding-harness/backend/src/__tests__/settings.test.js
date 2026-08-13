@@ -86,6 +86,8 @@ describe('System Settings API - /settings', () => {
         CONTACT_HOTLINE: '0901234567',
         CONTACT_ZALO: '',
         CONTACT_FACEBOOK: '',
+        MARQUEE_ENABLED: true,
+        MARQUEE_CONTENT: '',
       });
       expect(prisma.systemSetting.findMany).toHaveBeenCalled();
     });
@@ -123,6 +125,8 @@ describe('System Settings API - /settings', () => {
         CONTACT_HOTLINE: '',
         CONTACT_ZALO: '',
         CONTACT_FACEBOOK: '',
+        MARQUEE_ENABLED: true,
+        MARQUEE_CONTENT: '',
       });
       expect(prisma.systemSetting.findMany).toHaveBeenCalled();
     });
@@ -150,7 +154,7 @@ describe('System Settings API - /settings', () => {
         .send(payload)
         .expect(200);
 
-      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(17);
+      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(19);
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { key: 'TELEGRAM_BOT_TOKEN' },

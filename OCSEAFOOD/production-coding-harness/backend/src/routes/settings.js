@@ -27,7 +27,9 @@ router.get('/public', async (req, res, next) => {
             'HOMEPAGE_ANNOUNCEMENT_CONTENT',
             'CONTACT_HOTLINE',
             'CONTACT_ZALO',
-            'CONTACT_FACEBOOK'
+            'CONTACT_FACEBOOK',
+            'MARQUEE_ENABLED',
+            'MARQUEE_CONTENT'
           ]
         }
       }
@@ -45,6 +47,9 @@ router.get('/public', async (req, res, next) => {
       CONTACT_HOTLINE: map['CONTACT_HOTLINE'] || '',
       CONTACT_ZALO: map['CONTACT_ZALO'] || '',
       CONTACT_FACEBOOK: map['CONTACT_FACEBOOK'] || '',
+      // Chưa cấu hình lần nào (key chưa tồn tại) → mặc định bật, giữ đúng hành vi ban đầu
+      MARQUEE_ENABLED: map['MARQUEE_ENABLED'] === undefined ? true : map['MARQUEE_ENABLED'] === 'true',
+      MARQUEE_CONTENT: map['MARQUEE_CONTENT'] || '',
     });
   } catch (err) {
     next(err);
@@ -73,6 +78,8 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
       CONTACT_HOTLINE: settings['CONTACT_HOTLINE'] || '',
       CONTACT_ZALO: settings['CONTACT_ZALO'] || '',
       CONTACT_FACEBOOK: settings['CONTACT_FACEBOOK'] || '',
+      MARQUEE_ENABLED: settings['MARQUEE_ENABLED'] === undefined ? true : settings['MARQUEE_ENABLED'] === 'true',
+      MARQUEE_CONTENT: settings['MARQUEE_CONTENT'] || '',
     });
   } catch (err) {
     next(err);
@@ -99,7 +106,9 @@ router.put('/', auth, authorize('ADMIN'), async (req, res, next) => {
       HOMEPAGE_ANNOUNCEMENT_CONTENT,
       CONTACT_HOTLINE,
       CONTACT_ZALO,
-      CONTACT_FACEBOOK
+      CONTACT_FACEBOOK,
+      MARQUEE_ENABLED,
+      MARQUEE_CONTENT
     } = req.body;
 
     const keysToSave = {
@@ -120,6 +129,8 @@ router.put('/', auth, authorize('ADMIN'), async (req, res, next) => {
       CONTACT_HOTLINE: CONTACT_HOTLINE || '',
       CONTACT_ZALO: CONTACT_ZALO || '',
       CONTACT_FACEBOOK: CONTACT_FACEBOOK || '',
+      MARQUEE_ENABLED: MARQUEE_ENABLED ? 'true' : 'false',
+      MARQUEE_CONTENT: MARQUEE_CONTENT || '',
     };
 
     // Perform upsert inside transaction

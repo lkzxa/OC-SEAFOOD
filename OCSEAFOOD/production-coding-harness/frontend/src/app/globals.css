@@ -75,6 +75,21 @@ input::-webkit-credentials-auto-fill-button {
   animation: cartBounce 0.5s ease-in-out;
 }
 
+/* Marquee banner — text runs continuously left to right.
+   Content is duplicated once (see MarqueeBanner.tsx); translating from
+   -50% to 0% moves exactly one copy's width, looping seamlessly. */
+@keyframes marqueeLtr {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee-ltr {
+  display: flex;
+  width: max-content;
+  flex-shrink: 0;
+  animation: marqueeLtr 22s linear infinite;
+}
+
 /* Hiệu ứng vệt sáng quét chéo (Holographic Sheen Sweep) cho Seafood Card */
 .holographic-card {
   position: relative;

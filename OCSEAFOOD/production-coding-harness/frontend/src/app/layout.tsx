@@ -5,6 +5,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingContact from "@/components/FloatingContact";
+import MarqueeBanner from "@/components/MarqueeBanner";
 
 const manrope = Manrope({
   subsets: ["latin", "vietnamese"],
@@ -31,7 +32,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-navy-900 text-slate-100 font-sans">
+      <body className="min-h-full flex flex-col bg-navy-900 text-slate-100 font-sans pb-9 md:pb-10">
         {/* Suspense required because Header uses useSearchParams() */}
         <Suspense fallback={
           <div className="h-16 bg-navy-900 border-b border-navy-800" />
@@ -41,6 +42,7 @@ export default function RootLayout({
         <main className="flex-grow">{children}</main>
         <Footer />
         <FloatingContact />
+        <MarqueeBanner />
       </body>
     </html>
   );

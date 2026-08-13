@@ -41,6 +41,8 @@ export default function AdminSettingsPage() {
   const [showSmtpPass, setShowSmtpPass] = useState(false);
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
   const [announcementContent, setAnnouncementContent] = useState("");
+  const [marqueeEnabled, setMarqueeEnabled] = useState(true);
+  const [marqueeContent, setMarqueeContent] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -93,6 +95,8 @@ export default function AdminSettingsPage() {
         setContactHotline(data.CONTACT_HOTLINE || "");
         setContactZalo(data.CONTACT_ZALO || "");
         setContactFacebook(data.CONTACT_FACEBOOK || "");
+        setMarqueeEnabled(data.MARQUEE_ENABLED !== false);
+        setMarqueeContent(data.MARQUEE_CONTENT || "");
         setLoading(false);
       })
       .catch((err) => {
@@ -134,6 +138,8 @@ export default function AdminSettingsPage() {
           CONTACT_HOTLINE: contactHotline,
           CONTACT_ZALO: contactZalo,
           CONTACT_FACEBOOK: contactFacebook,
+          MARQUEE_ENABLED: marqueeEnabled,
+          MARQUEE_CONTENT: marqueeContent,
         }),
       });
 
@@ -615,6 +621,45 @@ export default function AdminSettingsPage() {
                         onChange={(e) => setContactFacebook(e.target.value)}
                         placeholder="Nhập đường dẫn Fanpage hoặc Messenger"
                         className="admin-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Box 4: Cấu hình thanh chạy chữ (Marquee) */}
+                <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl space-y-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-orange-400 select-none">directions_run</span>
+                      Thanh chạy chữ (cuối trang)
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Cấu hình khẩu hiệu thương hiệu chạy liên tục ở thanh cố định cuối màn hình, hiển thị trên mọi trang.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-navy-900">
+                    <label className="flex items-center gap-2 text-sm text-slate-300 font-bold cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={marqueeEnabled}
+                        onChange={(e) => setMarqueeEnabled(e.target.checked)}
+                        className="rounded bg-navy-800 border-navy-700 text-orange-500 focus:ring-orange-500 focus:ring-offset-navy-900"
+                      />
+                      Bật thanh chạy chữ
+                    </label>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                        Nội dung khẩu hiệu
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={marqueeContent}
+                        onChange={(e) => setMarqueeContent(e.target.value)}
+                        placeholder="Để trống sẽ dùng khẩu hiệu mặc định: CÔNG TY TNHH ỐC SEAFOOD - ỐC SEAFOOD TƯƠI NGON ĐẲNG CẤP - TẬN TÂM PHỤC VỤ KHÁCH HÀNG - HỖ TRỢ 24/7"
+                        className="admin-input"
+                        disabled={!marqueeEnabled}
                       />
                     </div>
                   </div>
