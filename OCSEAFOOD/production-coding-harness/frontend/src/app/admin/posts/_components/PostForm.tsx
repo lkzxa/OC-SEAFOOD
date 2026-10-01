@@ -8,10 +8,14 @@ import { useAuthStore } from "@/store/useAuthStore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import type ReactQuillInstance from "react-quill-new";
+import type { ComponentProps, ComponentType, RefAttributes } from "react";
 
-// Dynamically import react-quill-new to avoid SSR and React 19 findDOMNode issues
-// Cast to any to allow ref forwarding (react-quill-new types don't expose ref in dynamic())
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
+// Dynamically import react-quill-new because the editor requires browser APIs.
+type ReactQuillProps = ComponentProps<typeof ReactQuillInstance>;
+const ReactQuill = dynamic<ReactQuillProps>(() => import("react-quill-new"), { ssr: false }) as ComponentType<
+  ReactQuillProps & RefAttributes<ReactQuillInstance>
+>;
 import "react-quill-new/dist/quill.snow.css";
 
 interface PostFormProps {
@@ -23,6 +27,7 @@ const emptyForm = {
   title: "",
   slug: "",
   content: "",
+  excerpt: "",
   image: "",
   isVisible: true,
   metaTitle: "",
@@ -31,21 +36,10 @@ const emptyForm = {
   imageAlt: "",
 };
 
-const quillModules = {
-  toolbar: [
-    [{ header: [2, 3, 4, false] }],
-    ["bold", "italic", "underline", "strike"],
-    [{ align: [] }],
-    [{ list: "ordered" }, { list: "bullet" }],
-    ["link", "image"],
-    ["clean"],
-  ],
-};
-
 export default function PostForm({ isEditing, postId }: PostFormProps) {
   const { token } = useAuthStore();
   const router = useRouter();
-  const quillRef = useRef<any>(null);
+  const quillRef = useRef<ReactQuillInstance | null>(null);
   
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(isEditing);
@@ -55,33 +49,34 @@ export default function PostForm({ isEditing, postId }: PostFormProps) {
   const [seoExpanded, setSeoExpanded] = useState(false);
 
   useEffect(() => {
-    if (isEditing && postId) {
-      loadPost(postId);
-    }
-  }, [isEditing, postId]);
+    if (!isEditing || !postId) return;
 
-  const loadPost = async (id: string) => {
-    try {
-      const res = await fetch(`/api/posts/${id}`);
-      if (!res.ok) throw new Error("Không thể tải bài viết.");
-      const data = await res.json();
-      setForm({
-        title: data.title || "",
-        slug: data.slug || "",
-        content: data.content || "",
-        image: data.image || "",
-        isVisible: data.isVisible ?? true,
-        metaTitle: data.metaTitle || "",
-        metaDescription: data.metaDescription || "",
-        metaKeywords: data.metaKeywords || "",
-        imageAlt: data.imageAlt || "",
-      });
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Đã xảy ra lỗi.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadPost = async () => {
+      try {
+        const res = await fetch(`/api/posts/${postId}`);
+        if (!res.ok) throw new Error("Không thể tải bài viết.");
+        const data = await res.json();
+        setForm({
+          title: data.title || "",
+          slug: data.slug || "",
+          content: data.content || "",
+          excerpt: data.excerpt || "",
+          image: data.image || "",
+          isVisible: data.isVisible ?? true,
+          metaTitle: data.metaTitle || "",
+          metaDescription: data.metaDescription || "",
+          metaKeywords: data.metaKeywords || "",
+          imageAlt: data.imageAlt || "",
+        });
+      } catch (err) {
+        setErrorMsg(err instanceof Error ? err.message : "Đã xảy ra lỗi.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadPost();
+  }, [isEditing, postId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +98,7 @@ export default function PostForm({ isEditing, postId }: PostFormProps) {
         title: form.title.trim(),
         slug: form.slug.trim(),
         content: form.content.trim(),
+        excerpt: form.excerpt.trim() || null,
         image: form.image.trim() || null,
         metaTitle: form.metaTitle.trim() || null,
         metaDescription: form.metaDescription.trim() || null,
@@ -252,6 +248,18 @@ export default function PostForm({ isEditing, postId }: PostFormProps) {
                   </button>
                 </div>
               </Field>
+              <Field label="Mô tả ngắn">
+                <textarea
+                  rows={3}
+                  className="admin-input"
+                  value={form.excerpt}
+                  onChange={(e) => setForm((prev) => ({ ...prev, excerpt: e.target.value }))}
+                  disabled={saving}
+                  maxLength={240}
+                  placeholder="Tóm tắt ngắn hiển thị trên thẻ bài viết"
+                />
+                <div className="text-right text-[10px] text-slate-500">{form.excerpt.length}/240</div>
+              </Field>
             </div>
 
             <div className="bg-navy-950 border border-navy-700/50 rounded-2xl p-6 shadow-xl space-y-2">
@@ -288,7 +296,7 @@ export default function PostForm({ isEditing, postId }: PostFormProps) {
               <button 
                 type="submit" 
                 disabled={saving} 
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm flex items-center justify-center gap-2"
+                className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm flex items-center justify-center gap-2"
               >
                 {saving && <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>}
                 {saving ? "Đang lưu..." : "Lưu bài viết"}

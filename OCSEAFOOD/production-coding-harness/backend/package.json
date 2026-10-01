@@ -6,9 +6,19 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
+    "build": "node --check src/server.js && node --check src/app.js",
+    "lint": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js && node --check src/constants/orderStatus.js && node --check src/routes/orders.js && node --check src/routes/settings.js && node --check src/workers/notificationWorker.js && node --check src/utils/seed.js && node --check create-admin.js",
     "test": "jest --runInBand --detectOpenHandles --forceExit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:validate": "prisma validate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "admin:create": "node create-admin.js",
+    "media:inventory": "node scripts/media-inventory.js",
+    "media:inventory:strict": "node scripts/media-inventory.js --strict",
+    "media:backup": "node scripts/media-backup.js create",
+    "media:verify-backup": "node scripts/media-backup.js verify",
+    "content:import-reviewed": "node scripts/import-reviewed-posts.js --apply"
   },
   "dependencies": {
     "@prisma/client": "^5.15.0",
@@ -16,12 +26,12 @@
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "express": "5.2.1",
     "express-rate-limit": "^7.3.1",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.2.0",
-    "nodemailer": "^8.0.11",
+    "multer": "2.3.0",
+    "nodemailer": "10.0.3",
     "uuid": "^14.0.0",
     "zod": "^3.23.8"
   },

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">OCSEAFOOD</title>
+  <desc id="description">Ảnh thay thế của OCSEAFOOD</desc>
+  <rect width="1200" height="800" fill="#eef6f8"/>
+  <path d="M0 555c155-88 278-91 431-12 165 85 305 80 461-15 114-69 207-73 308-26v298H0z" fill="#0d4f66"/>
+  <path d="M0 635c158-62 292-59 444 12 151 71 301 68 447-9 115-61 215-65 309-26v188H0z" fill="#f58220" opacity=".92"/>
+  <g fill="#0d4f66" text-anchor="middle" font-family="Arial, sans-serif">
+    <text x="600" y="330" font-size="82" font-weight="700">OCSEAFOOD</text>
+    <text x="600" y="395" font-size="30">Hải sản tươi ngon mỗi ngày</text>
+  </g>
+</svg>

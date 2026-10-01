@@ -1,9 +1,13 @@
 const { verifyToken } = require('../utils/jwt');
+const { getSessionToken } = require('../utils/authCookies');
 
 const optionalAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length)
+    : null;
+  const token = bearerToken || getSessionToken(req);
+  if (token) {
     try {
       const decoded = verifyToken(token);
       req.user = decoded; // Attach user info if token is valid

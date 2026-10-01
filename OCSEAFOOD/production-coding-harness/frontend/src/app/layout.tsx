@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FloatingContact from "@/components/FloatingContact";
 import MarqueeBanner from "@/components/MarqueeBanner";
+import AuthSessionProvider from "@/components/AuthSessionProvider";
 
 const manrope = Manrope({
   subsets: ["latin", "vietnamese"],
@@ -14,8 +15,16 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "OCSEAFOOD - Hải Sản Cao Cấp",
   description: "Chất lượng loại 1, cam kết tươi sống mỗi ngày từ những vùng biển tinh khiết nhất thế giới.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
@@ -33,16 +42,18 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-navy-900 text-slate-100 font-sans pb-9 md:pb-10">
-        {/* Suspense required because Header uses useSearchParams() */}
-        <Suspense fallback={
-          <div className="h-16 bg-navy-900 border-b border-navy-800" />
-        }>
-          <Header />
-        </Suspense>
-        <main className="flex-grow">{children}</main>
-        <Footer />
-        <FloatingContact />
-        <MarqueeBanner />
+        <AuthSessionProvider>
+          {/* Suspense required because Header uses useSearchParams() */}
+          <Suspense fallback={
+            <div className="h-16 bg-navy-900 border-b border-navy-800" />
+          }>
+            <Header />
+          </Suspense>
+          <main className="flex-grow">{children}</main>
+          <Footer />
+          <FloatingContact />
+          <MarqueeBanner />
+        </AuthSessionProvider>
       </body>
     </html>
   );

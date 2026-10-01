@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
-import ComboForm from "@/components/admin/ComboForm";
-import { getAuthHeaders } from "@/components/admin/adminApi";
+import ComboForm, { ComboFormData } from "@/components/admin/ComboForm";
+import { getAuthHeaders, getErrorMessage } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
 
 interface Combo {
@@ -49,8 +49,8 @@ export default function EditComboPage() {
         }
         const data = await res.json();
         setCombo(data);
-      } catch (err: any) {
-        setErrorMsg(err.message || "Đã xảy ra lỗi khi tải dữ liệu.");
+      } catch (err: unknown) {
+        setErrorMsg(getErrorMessage(err, "Đã xảy ra lỗi khi tải dữ liệu."));
       } finally {
         setLoading(false);
       }
@@ -58,7 +58,7 @@ export default function EditComboPage() {
     fetchCombo();
   }, [id, token]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ComboFormData) => {
     setSaving(true);
     setErrorMsg(null);
 
@@ -78,8 +78,8 @@ export default function EditComboPage() {
       }
 
       router.push("/admin/combos");
-    } catch (err: any) {
-      setErrorMsg(err.message || "Cập nhật combo thất bại. Vui lòng kiểm tra lại dữ liệu.");
+    } catch (err: unknown) {
+      setErrorMsg(getErrorMessage(err, "Cập nhật combo thất bại. Vui lòng kiểm tra lại dữ liệu."));
     } finally {
       setSaving(false);
     }

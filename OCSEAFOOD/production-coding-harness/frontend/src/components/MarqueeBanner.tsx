@@ -1,33 +1,44 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const DEFAULT_SLOGAN =
   "CÔNG TY TNHH ỐC SEAFOOD  •  ỐC SEAFOOD TƯƠI NGON ĐẲNG CẤP  •  TẬN TÂM PHỤC VỤ KHÁCH HÀNG  •  HỖ TRỢ 24/7  •  ";
 
 export default function MarqueeBanner() {
-  const [enabled, setEnabled] = useState(true);
+  const pathname = usePathname();
+  const [enabled, setEnabled] = useState(false);
   const [content, setContent] = useState(DEFAULT_SLOGAN);
 
   useEffect(() => {
     let isMounted = true;
-    fetch("/api/settings/public")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => {
-        if (!isMounted) return;
-        setEnabled(data.MARQUEE_ENABLED !== false);
-        const configured = (data.MARQUEE_CONTENT || "").trim();
-        setContent(configured ? `${configured}  •  ` : DEFAULT_SLOGAN);
-      })
-      .catch(() => {
-        // Giữ nguyên giá trị mặc định nếu API lỗi
-      });
+    const loadSettings = () => {
+      fetch("/api/settings/public", { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((data) => {
+          if (!isMounted) return;
+          setEnabled(data.MARQUEE_ENABLED !== false);
+          const configured = (data.MARQUEE_CONTENT || "").trim();
+          setContent(configured ? `${configured}  •  ` : DEFAULT_SLOGAN);
+        })
+        .catch(() => {
+          // Giữ nguyên giá trị mặc định nếu API lỗi
+        });
+    };
+
+    loadSettings();
+    window.addEventListener("ocseafood-settings-updated", loadSettings);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("ocseafood-settings-updated", loadSettings);
     };
   }, []);
 
-  if (!enabled) return null;
+  const shouldHideOnCheckout = pathname === "/cart";
+
+  if (!enabled || shouldHideOnCheckout) return null;
 
   return (
     <div

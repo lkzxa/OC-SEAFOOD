@@ -1,0 +1,88 @@
+{
+  "task": "TASK-0053",
+  "status": "reviewed-for-local-qa",
+  "reviewedAt": "2026-09-11",
+  "environment": "local-only",
+  "productionReady": false,
+  "productionNote": "Do not copy these local records to production until the release-candidate, business-data, backup, and deployment gates are complete.",
+  "database": {
+    "postCountBefore": 2,
+    "postCountAfter": 10,
+    "preImportBackup": "backend/backups/task-0053-preimport-20260911.dump"
+  },
+  "articles": [
+    {
+      "id": 34,
+      "source": "content/drafts/01-cach-bao-quan-hai-san-tuoi-song.md",
+      "slug": "cach-bao-quan-hai-san-tuoi-song",
+      "image": "/uploads/articles/cach-bao-quan-hai-san-tuoi-song.png",
+      "imageAlt": "Hải sản tươi được chia hộp và bảo quản trong ngăn mát sạch",
+      "imageSource": "generated",
+      "businessReviewRequired": false
+    },
+    {
+      "id": 35,
+      "source": "content/drafts/02-cach-ra-dong-hai-san-dung-cach.md",
+      "slug": "cach-ra-dong-hai-san-dung-cach",
+      "image": "/uploads/articles/cach-ra-dong-hai-san-dung-cach.png",
+      "imageAlt": "Gói hải sản đông lạnh đặt trong khay ngăn mát để rã đông",
+      "imageSource": "generated",
+      "businessReviewRequired": false
+    },
+    {
+      "id": 36,
+      "source": "content/drafts/03-cach-chon-tom-tuoi-ngon.md",
+      "slug": "cach-chon-tom-tuoi-ngon",
+      "image": "/uploads/articles/cach-chon-tom-tuoi-ngon.png",
+      "imageAlt": "Tôm sú, tôm tít và tôm mũ ni tươi đặt trên khay lạnh",
+      "imageSource": "existing-ocseafood",
+      "businessReviewRequired": false
+    },
+    {
+      "id": 37,
+      "source": "content/drafts/04-cach-che-bien-ca-hoi-don-gian.md",
+      "slug": "cach-che-bien-ca-hoi-don-gian",
+      "image": "/uploads/articles/cach-che-bien-ca-hoi-don-gian.png",
+      "imageAlt": "Miếng cá hồi áp chảo chín đều dùng cùng rau củ tại nhà",
+      "imageSource": "existing-ocseafood",
+      "businessReviewRequired": false
+    },
+    {
+      "id": 38,
+      "source": "content/drafts/05-cach-so-che-oc-sach-khong-tanh.md",
+      "slug": "cach-so-che-oc-sach-khong-tanh",
+      "image": "/uploads/articles/cach-so-che-oc-sach-khong-tanh.png",
+      "imageAlt": "Ốc và sò được phân loại trong khay sạch trước khi sơ chế",
+      "imageSource": "existing-ocseafood",
+      "businessReviewRequired": true
+    },
+    {
+      "id": 39,
+      "source": "content/drafts/06-cach-nau-lau-hai-san-tai-nha.md",
+      "slug": "cach-nau-lau-hai-san-tai-nha",
+      "image": "/uploads/articles/cach-nau-lau-hai-san-tai-nha.png",
+      "imageAlt": "Nồi lẩu hải sản sôi nhẹ với các đĩa nguyên liệu được chia riêng",
+      "imageSource": "generated",
+      "businessReviewRequired": true
+    },
+    {
+      "id": 40,
+      "source": "content/drafts/07-cach-che-bien-tom-hum-alaska.md",
+      "slug": "cach-che-bien-tom-hum-alaska",
+      "image": "/uploads/articles/cach-che-bien-tom-hum-alaska.png",
+      "imageAlt": "Tôm hùm Alaska nguyên con và phần thịt chín trắng đục trên bàn tiệc",
+      "imageSource": "existing-ocseafood",
+      "businessReviewRequired": true
+    },
+    {
+      "id": 41,
+      "source": "content/drafts/08-cach-chon-combo-hai-san-theo-so-nguoi.md",
+      "slug": "cach-chon-combo-hai-san-theo-so-nguoi",
+      "image": "/uploads/articles/cach-chon-combo-hai-san-theo-so-nguoi.png",
+      "imageAlt": "Bàn tiệc hải sản gia đình với số ghế và món ăn được bố trí rõ",
+      "imageSource": "generated",
+      "businessReviewRequired": true,
+      "publicationBlocker": "OCSEAFOOD operations must confirm serving sizes, current components, prices, stock, and allergen information before production publication."
+    }
+  ]
+}

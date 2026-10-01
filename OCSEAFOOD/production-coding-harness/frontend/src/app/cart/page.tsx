@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderHistoryStore } from "@/store/useOrderHistoryStore";
-import { vietnamLocations } from "@/utils/vietnamLocations";
+import { DIRECT_WARD_DISTRICT_NAME, vietnamLocations, type LocationNode } from "@/utils/vietnamLocations";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
 interface OrderResponse {
@@ -38,6 +39,138 @@ function resolveAddressName(
 
   const district = province?.districts.find((d) => d.code === districtValue || d.name === districtValue);
   return district?.wards.find((w) => w.code === value || w.name === value)?.name || value;
+}
+
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
+
+interface SearchableAddressSelectProps {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  options: LocationNode[];
+  disabled?: boolean;
+  icon?: string;
+  helperText?: string;
+  onChange: (value: string) => void;
+}
+
+function SearchableAddressSelect({
+  id,
+  label,
+  placeholder,
+  value,
+  options,
+  disabled = false,
+  icon,
+  helperText,
+  onChange,
+}: SearchableAddressSelectProps) {
+  const selectedOption = options.find((option) => option.code === value);
+  const selectedName = selectedOption?.name || "";
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const displayedValue = isOpen ? query : selectedName;
+
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(query);
+    const nextOptions = normalizedQuery
+      ? options.filter((option) => normalizeSearchText(option.name).includes(normalizedQuery))
+      : options;
+
+    return nextOptions.slice(0, 80);
+  }, [options, query]);
+
+  const hasMatches = filteredOptions.length > 0;
+  const shouldShowList = isOpen && !disabled;
+
+  return (
+    <div className="flex flex-col gap-1.5 relative">
+      <label htmlFor={id} className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+        {label} <span className="text-red-500">*</span>
+      </label>
+      <div className="flex items-center bg-navy-800/80 border border-navy-700/60 rounded-xl px-4 py-2.5 focus-within:border-orange-500 transition-colors">
+        {icon && <span className="material-symbols-outlined text-slate-400 select-none text-xl mr-3">{icon}</span>}
+        <input
+          id={id}
+          type="text"
+          role="combobox"
+          aria-expanded={shouldShowList}
+          aria-controls={`${id}-listbox`}
+          aria-autocomplete="list"
+          placeholder={placeholder}
+          value={displayedValue}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setIsOpen(true);
+            if (value) onChange("");
+          }}
+          onFocus={() => {
+            setQuery(selectedName);
+            setIsOpen(true);
+          }}
+          onBlur={() => {
+            window.setTimeout(() => {
+              setIsOpen(false);
+              setQuery(selectedName);
+            }, 120);
+          }}
+          className="bg-transparent border-none text-slate-200 text-sm w-full focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-500"
+          disabled={disabled}
+          required
+        />
+      </div>
+      {shouldShowList && (
+        <div
+          id={`${id}-listbox`}
+          role="listbox"
+          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-navy-700 bg-navy-950 shadow-2xl shadow-black/30"
+        >
+          {hasMatches ? (
+            filteredOptions.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                role="option"
+                aria-selected={option.code === value}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(option.code);
+                  setQuery(option.name);
+                  setIsOpen(false);
+                }}
+                className="block w-full px-4 py-2.5 text-left text-sm text-slate-200 hover:bg-orange-500/15 hover:text-orange-300 focus:bg-orange-500/15 focus:text-orange-300 focus:outline-none"
+              >
+                {option.name}
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-xs text-slate-500">Không tìm thấy địa chỉ phù hợp.</div>
+          )}
+        </div>
+      )}
+      {helperText && <p className="text-[10px] text-slate-500 leading-relaxed">{helperText}</p>}
+    </div>
+  );
+}
+
+function isDirectWardDistrict(value: string) {
+  return value === DIRECT_WARD_DISTRICT_NAME || value.endsWith("-direct");
+}
+
+function formatDeliveryAddress(streetAddress: string, wardName: string, districtName: string, provinceName: string) {
+  return [streetAddress, wardName, isDirectWardDistrict(districtName) ? "" : districtName, provinceName]
+    .filter(Boolean)
+    .join(", ");
 }
 
 export default function CartPage() {
@@ -80,8 +213,9 @@ export default function CartPage() {
 
   // Dropdown list resolvers
   const selectedProvinceObj = vietnamLocations.find((p) => p.code === province);
+  const directDistrictCode = province ? `${province}-direct` : "";
   const districtsList = selectedProvinceObj ? selectedProvinceObj.districts : [];
-  const selectedDistrictObj = districtsList.find((d) => d.code === district);
+  const selectedDistrictObj = districtsList.find((d) => d.code === (district || directDistrictCode));
   const wardsList = selectedDistrictObj ? selectedDistrictObj.wards : [];
 
   // Format VND Helper
@@ -199,6 +333,7 @@ export default function CartPage() {
     const displayProvince = resolveAddressName("province", successOrder.province);
     const displayDistrict = resolveAddressName("district", successOrder.district, successOrder.province);
     const displayWard = resolveAddressName("ward", successOrder.ward, successOrder.province, successOrder.district);
+    const displayAddress = formatDeliveryAddress(successOrder.streetAddress, displayWard, displayDistrict, displayProvince);
 
     return (
       <div className="max-w-[800px] mx-auto px-4 py-16 text-center">
@@ -231,7 +366,7 @@ export default function CartPage() {
             <div className="flex justify-between border-b border-navy-800 pb-2">
               <span className="text-slate-400 font-medium">Địa chỉ giao hàng:</span>
               <span className="text-slate-200 font-bold text-right">
-                {`${successOrder.streetAddress}, ${displayWard}, ${displayDistrict}, ${displayProvince}`}
+                {displayAddress}
               </span>
             </div>
             <div className="flex justify-between pt-1">
@@ -243,7 +378,7 @@ export default function CartPage() {
           <div className="pt-4">
             <Link
               href="/menu"
-              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/15 text-sm"
+              className="inline-block bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/15 text-sm"
             >
               TIẾP TỤC MUA SẮM
             </Link>
@@ -282,7 +417,7 @@ export default function CartPage() {
           <div className="pt-4">
             <Link
               href="/menu"
-              className="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/15 text-sm"
+              className="inline-block bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-8 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/15 text-sm"
             >
               QUAY LẠI CỬA HÀNG
             </Link>
@@ -318,12 +453,17 @@ export default function CartPage() {
 
             <div className="divide-y divide-navy-800">
               {items.map((item) => (
-                <div key={`${item.id}-${item.selectedWeight || ""}-${item.isCombo ? "combo" : "prod"}`} className="py-4 flex gap-4 first:pt-0 last:pb-0 items-center justify-between">
-                  <div className="flex gap-4 items-center flex-1 min-w-0">
-                    <img
-                      src={optimizeImageUrl(item.image ? item.image.split(",")[0].trim() : "", 150)}
+                <div
+                  key={`${item.id}-${item.selectedWeight || ""}-${item.isCombo ? "combo" : "prod"}`}
+                  className="py-4 flex flex-col gap-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex w-full min-w-0 gap-3 sm:gap-4 items-start sm:items-center sm:flex-1">
+                    <Image
+                      src={optimizeImageUrl(item.image ? item.image.split(",")[0].trim() : "", 150) || "/media-placeholder.svg"}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg border border-navy-700 bg-navy-900"
+                      className="w-16 h-16 shrink-0 object-cover rounded-lg border border-navy-700 bg-navy-900"
+                      width={64}
+                      height={64}
                       // BUG-L04 fix: Fallback khi ảnh bị lỗi/404
                       onError={(e) => {
                         e.currentTarget.src = '';
@@ -336,8 +476,8 @@ export default function CartPage() {
                     <div className="hidden w-16 h-16 rounded-lg border border-navy-700 bg-navy-900 items-center justify-center text-slate-500 shrink-0">
                       <span className="material-symbols-outlined text-2xl">image_not_supported</span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-sm font-bold text-slate-200 truncate">{item.name}</h3>
+                    <div className="min-w-0 flex-1 pt-0.5 sm:pt-0">
+                      <h3 className="text-sm font-bold text-slate-200 leading-snug break-words sm:truncate">{item.name}</h3>
                       <div className="flex items-center flex-wrap gap-2 mt-0.5">
                         <p className="text-[11px] text-slate-400 font-medium">
                           Quy cách: {item.unit}
@@ -355,7 +495,7 @@ export default function CartPage() {
                   </div>
 
                   {/* Quantity Actions & Price */}
-                  <div className="flex items-center gap-6">
+                  <div className="flex w-full flex-wrap items-center justify-between gap-3 pl-0 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-6 sm:pl-0">
                     {/* Quantity controls */}
                     <div className="flex items-center bg-navy-900 border border-navy-700 rounded-lg overflow-hidden h-8">
                       <button
@@ -378,7 +518,7 @@ export default function CartPage() {
                     </div>
 
                     {/* Subtotal & Delete */}
-                    <div className="text-right min-w-[90px]">
+                    <div className="min-w-[90px] text-right">
                       <p className="text-xs font-black text-slate-200">
                         {formatVND(item.priceReference * item.quantity)}
                       </p>
@@ -484,85 +624,31 @@ export default function CartPage() {
                   Địa chỉ giao nhận
                 </p>
 
-                {/* Tỉnh/Thành phố */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                    Tỉnh / Thành phố <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center bg-navy-800/80 border border-navy-700/60 rounded-xl px-4 py-2.5 focus-within:border-orange-500 transition-colors">
-                    <span className="material-symbols-outlined text-slate-400 select-none text-xl mr-3">location_on</span>
-                    <select
-                      value={province}
-                      onChange={(e) => {
-                        setProvince(e.target.value);
-                        setDistrict("");
-                        setWard("");
-                      }}
-                      className="bg-transparent border-none text-slate-200 text-sm w-full focus:outline-none focus:ring-0 cursor-pointer"
-                      disabled={loading}
-                      required
-                    >
-                      <option value="" className="bg-navy-900 text-slate-300">-- Chọn Tỉnh/Thành phố --</option>
-                      {vietnamLocations.map((p) => (
-                        <option key={p.code} value={p.code} className="bg-navy-900 text-slate-300">
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                <SearchableAddressSelect
+                  id="province-search"
+                  label="Tỉnh / Thành phố"
+                  placeholder="Chọn tỉnh thành phố"
+                  value={province}
+                  options={vietnamLocations}
+                  disabled={loading}
+                  icon="location_on"
+                  onChange={(nextProvince) => {
+                    setProvince(nextProvince);
+                    setDistrict(nextProvince ? `${nextProvince}-direct` : "");
+                    setWard("");
+                  }}
+                />
 
-                {/* Quận/Huyện & Phường/Xã */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Quận/Huyện */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                      Quận / Huyện <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center bg-navy-800/80 border border-navy-700/60 rounded-xl px-4 py-2.5 focus-within:border-orange-500 transition-colors">
-                      <select
-                        value={district}
-                        onChange={(e) => {
-                          setDistrict(e.target.value);
-                          setWard("");
-                        }}
-                        className="bg-transparent border-none text-slate-200 text-sm w-full focus:outline-none focus:ring-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={loading || !province}
-                        required
-                      >
-                        <option value="" className="bg-navy-900 text-slate-300">-- Chọn Quận/Huyện --</option>
-                        {districtsList.map((d) => (
-                          <option key={d.code} value={d.code} className="bg-navy-900 text-slate-300">
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Phường/Xã */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                      Phường / Xã <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center bg-navy-800/80 border border-navy-700/60 rounded-xl px-4 py-2.5 focus-within:border-orange-500 transition-colors">
-                      <select
-                        value={ward}
-                        onChange={(e) => setWard(e.target.value)}
-                        className="bg-transparent border-none text-slate-200 text-sm w-full focus:outline-none focus:ring-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={loading || !district}
-                        required
-                      >
-                        <option value="" className="bg-navy-900 text-slate-300">-- Chọn Phường/Xã --</option>
-                        {wardsList.map((w) => (
-                          <option key={w.code} value={w.code} className="bg-navy-900 text-slate-300">
-                            {w.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                <SearchableAddressSelect
+                  id="ward-search"
+                  label="Phường / Xã / Đặc khu"
+                  placeholder="Gõ tên phường/xã/đặc khu"
+                  value={ward}
+                  options={wardsList}
+                  disabled={loading || !province}
+                  helperText="Danh sách theo mô hình địa chỉ mới: tỉnh/thành phố và đơn vị cấp xã trực thuộc."
+                  onChange={(nextWard) => setWard(nextWard)}
+                />
 
                 {/* Số nhà, tên đường */}
                 <div className="flex flex-col gap-1.5">
@@ -622,7 +708,7 @@ export default function CartPage() {
             <button
               type="submit"
               disabled={loading || items.length === 0}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+              className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-4 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
             >
               {loading ? "ĐANG XỬ LÝ..." : "XÁC NHẬN ĐẶT HÀNG"}
             </button>
@@ -637,3 +723,4 @@ export default function CartPage() {
     </div>
   );
 }
+

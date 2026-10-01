@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { OFFICIAL_PHONE_DISPLAY, OFFICIAL_PHONE_TEL } from "@/constants/contact";
 
 export default function Footer() {
   return (
@@ -33,12 +34,10 @@ export default function Footer() {
 
 
               </p>
-              <p className="flex items-center gap-2">
+              <a href={OFFICIAL_PHONE_TEL} className="flex items-center gap-2 hover:text-slate-200 transition-colors">
                 <span className="material-symbols-outlined text-orange-500 select-none">call</span>
-                Hotline: 0908 464 818
-
-
-              </p>
+                Hotline: {OFFICIAL_PHONE_DISPLAY}
+              </a>
               <p className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-orange-500 select-none">mail</span>
                 Email: contact@ocseafood.vn
@@ -48,9 +47,9 @@ export default function Footer() {
 
           {/* Section 2: Quick Links */}
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
+            <h2 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
               Liên kết nhanh
-            </h4>
+            </h2>
             <ul className="space-y-3 text-slate-400 text-sm">
               <li>
                 <Link className="hover:text-orange-500 transition-colors" href="/">
@@ -77,9 +76,9 @@ export default function Footer() {
 
           {/* Section 3: Policies */}
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
+            <h2 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
               Chính sách
-            </h4>
+            </h2>
             <ul className="space-y-3 text-slate-400 text-sm">
               <li>
                 <Link className="hover:text-orange-500 transition-colors" href="/about#returns">
@@ -106,9 +105,9 @@ export default function Footer() {
 
           {/* Section 4: Newsletter */}
           <div>
-            <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
+            <h2 className="text-white font-bold mb-6 uppercase tracking-widest text-sm">
               Bản tin
-            </h4>
+            </h2>
             <p className="text-slate-400 text-sm mb-4">
               Đăng ký để nhận ưu đãi mới nhất.
             </p>
@@ -118,18 +117,19 @@ export default function Footer() {
                 placeholder="Email của bạn"
                 type="email"
                 required
+                aria-label="Email nhận bản tin"
               />
               <button 
                 type="submit" 
-                className="bg-orange-500 p-2 rounded hover:bg-orange-600 transition-colors text-white flex items-center justify-center cursor-pointer"
-                aria-label="Send"
+                className="bg-orange-500 p-2 rounded hover:bg-orange-400 transition-colors text-navy-950 flex items-center justify-center cursor-pointer"
+                aria-label="Đăng ký nhận bản tin"
               >
                 <span className="material-symbols-outlined select-none">send</span>
               </button>
             </form>
             <div className="flex gap-4">
               <Link 
-                className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors text-slate-400" 
+                className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center hover:bg-orange-500 hover:text-navy-950 transition-colors text-slate-400"
                 href="https://facebook.com"
                 target="_blank"
                 aria-label="Facebook"
@@ -137,7 +137,7 @@ export default function Footer() {
                 <span className="material-symbols-outlined select-none text-base">public</span>
               </Link>
               <Link 
-                className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-colors text-slate-400" 
+                className="w-8 h-8 rounded-full bg-navy-800 flex items-center justify-center hover:bg-orange-500 hover:text-navy-950 transition-colors text-slate-400"
                 href="https://instagram.com"
                 target="_blank"
                 aria-label="Instagram"

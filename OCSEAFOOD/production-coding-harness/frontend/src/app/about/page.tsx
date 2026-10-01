@@ -1,4 +1,6 @@
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import Image from "next/image";
+import { OFFICIAL_PHONE_DISPLAY, OFFICIAL_PHONE_TEL } from "@/constants/contact";
 
 export default function AboutPage() {
   return (
@@ -26,10 +28,12 @@ export default function AboutPage() {
             Chúng tôi tự hào mang đến các dòng sản phẩm hải sản nhập khẩu chất lượng Loại 1 như Cua hoàng đế King Crab, Tôm hùm Alaska, Bào ngư Hàn Quốc và Sashimi chuẩn Nhật. Mỗi sản phẩm tại ỐC SEAFOOD đều được sàng lọc khắt khe từ khâu đánh bắt, đóng gói, bảo quản nhiệt độ chuẩn quốc tế cho đến khâu giao tận tay khách hàng.
           </p>
         </div>
-        <div className="aspect-video lg:aspect-square rounded-lg overflow-hidden bg-navy-900 border border-navy-700">
-          <img
+        <div className="relative aspect-video lg:aspect-square rounded-lg overflow-hidden bg-navy-900 border border-navy-700">
+          <Image
             alt="OCSEAFOOD Seafood Selection"
-            className="w-full h-full object-contain"
+            className="object-contain"
+            fill
+            sizes="(max-width: 1023px) 100vw, 50vw"
             src="/logo_chuan.png"
           />
         </div>
@@ -84,7 +88,9 @@ export default function AboutPage() {
             <span className="material-symbols-outlined text-orange-500 text-2xl select-none pt-1">phone_in_talk</span>
             <div className="space-y-1">
               <h4 className="text-xs font-black uppercase text-slate-400">Hotline</h4>
-              <p className="text-slate-200 text-xs md:text-sm font-semibold">0908 464 818</p>
+              <a href={OFFICIAL_PHONE_TEL} className="text-slate-200 text-xs md:text-sm font-semibold hover:text-orange-400 transition-colors">
+                {OFFICIAL_PHONE_DISPLAY}
+              </a>
               <p className="text-[10px] text-slate-400">Hỗ trợ 24/7 từ 8h - 22h</p>
             </div>
           </div>
@@ -159,10 +165,10 @@ export default function AboutPage() {
                 Quy trình đặt mua hải sản cao cấp tại website vô cùng dễ dàng và thuận tiện:
               </p>
               <ol className="list-decimal pl-5 space-y-1">
-                <li><strong>Bước 1:</strong> Truy cập danh mục <strong>Menu</strong> hoặc <strong>Combo</strong>, lựa chọn các loại hải sản yêu thích và nhấp chọn <em>"Thêm vào giỏ"</em>.</li>
+                <li><strong>Bước 1:</strong> Truy cập danh mục <strong>Menu</strong> hoặc <strong>Combo</strong>, lựa chọn các loại hải sản yêu thích và nhấp chọn <em>&ldquo;Thêm vào giỏ&rdquo;</em>.</li>
                 <li><strong>Bước 2:</strong> Vào trang <strong>Giỏ hàng</strong> để kiểm tra lại số lượng, giá trị và cập nhật voucher giảm giá (nếu có).</li>
-                <li><strong>Bước 3:</strong> Nhập đầy đủ thông tin giao hàng bao gồm: Họ tên, Số điện thoại và Địa chỉ chi tiết (3 cấp Tỉnh/Huyện/Xã).</li>
-                <li><strong>Bước 4:</strong> Bấm nút <em>"Đặt hàng"</em> để gửi đơn hàng. Đơn hàng của bạn sẽ được đồng bộ và gửi thông báo trực tiếp qua Telegram/Zalo của Admin xử lý chuẩn bị giao hàng trong thời gian ngắn nhất.</li>
+                <li><strong>Bước 3:</strong> Nhập đầy đủ thông tin giao hàng bao gồm: Họ tên, Số điện thoại và Địa chỉ chi tiết gồm Tỉnh/Thành phố, Phường/Xã/Đặc khu và số nhà/tên đường.</li>
+                <li><strong>Bước 4:</strong> Bấm nút <em>&ldquo;Đặt hàng&rdquo;</em> để gửi đơn hàng. Đơn hàng của bạn sẽ được đồng bộ và gửi thông báo trực tiếp qua Telegram/Zalo của Admin xử lý chuẩn bị giao hàng trong thời gian ngắn nhất.</li>
               </ol>
             </div>
           </div>

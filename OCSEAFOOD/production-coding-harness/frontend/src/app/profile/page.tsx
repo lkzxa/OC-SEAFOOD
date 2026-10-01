@@ -3,8 +3,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  getOrderStatusClass,
+  getOrderStatusLabel,
+  type OrderStatus,
+} from "@/constants/orderStatus";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useOrderHistoryStore } from "@/store/useOrderHistoryStore";
+import { OFFICIAL_PHONE_TEL } from "@/constants/contact";
+
+interface ServerOrderItem {
+  productId: number;
+  productName: string;
+  productUnit: string;
+  quantity: number;
+  priceFinal: number | string;
+}
+
+interface ServerOrder {
+  id: number;
+  code: string;
+  userId: number | null;
+  email: string;
+  fullName: string;
+  phone: string;
+  province: string;
+  district: string;
+  ward: string;
+  streetAddress: string;
+  note?: string | null;
+  status: OrderStatus;
+  totalFinal: number | string;
+  orderItems?: ServerOrderItem[];
+  createdAt: string;
+}
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("vi-VN", {
@@ -18,24 +50,14 @@ const formatDateTime = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 
-const getStatusLabel = (status: "PENDING" | "CONFIRMED" | "CANCELLED") => {
-  if (status === "CONFIRMED") return "Đã xác nhận";
-  if (status === "CANCELLED") return "Đã hủy";
-  return "Chờ tư vấn";
-};
-
-const getStatusClass = (status: "PENDING" | "CONFIRMED" | "CANCELLED") => {
-  if (status === "CONFIRMED") return "bg-green-500/10 text-green-400 border-green-500/20";
-  if (status === "CANCELLED") return "bg-red-500/10 text-red-400 border-red-500/20";
-  return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-};
-
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, token } = useAuthStore();
+  const { user, token, sessionReady } = useAuthStore();
   const orders = useOrderHistoryStore((state) => state.orders);
   const addOrder = useOrderHistoryStore((state) => state.addOrder);
   const [serverSynced, setServerSynced] = useState(false);
+  const [ordersError, setOrdersError] = useState(false);
+  const [ordersRequestVersion, setOrdersRequestVersion] = useState(0);
 
   const visibleOrders = useMemo(() => {
     if (!user) return [];
@@ -48,26 +70,27 @@ export default function ProfilePage() {
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (user === null) {
+    if (sessionReady && user === null) {
       router.push("/login?redirect=/profile");
     }
-  }, [user, router]);
+  }, [sessionReady, user, router]);
 
   // BUG-C02 fix: Sync order history from server API for logged-in users
   useEffect(() => {
-    if (!user || !token || serverSynced) return;
+    if (!user || serverSynced) return;
 
     const fetchOrders = async () => {
       try {
+        setOrdersError(false);
         const res = await fetch("/api/orders", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (!res.ok) return; // Silently fail (e.g., not admin)
+        if (!res.ok) throw new Error("Order service unavailable");
         const data = await res.json();
-        const serverOrders = data?.data || [];
+        const serverOrders = (data?.data || []) as ServerOrder[];
         // Merge server orders into local store (no duplicates)
         const localIds = new Set(orders.map((o) => o.id));
-        serverOrders.forEach((order: any) => {
+        serverOrders.forEach((order) => {
           if (!localIds.has(order.id)) {
             addOrder({
               id: order.id,
@@ -80,16 +103,16 @@ export default function ProfilePage() {
               district: order.district,
               ward: order.ward,
               streetAddress: order.streetAddress,
-              note: order.note,
+              note: order.note || undefined,
               status: order.status,
               totalFinal: Number(order.totalFinal),
-              totalItems: order.orderItems?.reduce((s: number, i: any) => s + i.quantity, 0) || 0,
-              items: (order.orderItems || []).map((i: any) => ({
-                productId: i.productId,
-                name: i.productName,
-                unit: i.productUnit,
-                quantity: i.quantity,
-                priceReference: Number(i.priceFinal),
+              totalItems: order.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+              items: (order.orderItems || []).map((item) => ({
+                productId: item.productId,
+                name: item.productName,
+                unit: item.productUnit,
+                quantity: item.quantity,
+                priceReference: Number(item.priceFinal),
                 image: "",
               })),
               createdAt: order.createdAt,
@@ -98,12 +121,12 @@ export default function ProfilePage() {
         });
         setServerSynced(true);
       } catch {
-        // Silently fail - localStorage data still works
+        setOrdersError(true);
       }
     };
 
     fetchOrders();
-  }, [user, token, serverSynced, orders, addOrder]);
+  }, [user, token, serverSynced, orders, addOrder, ordersRequestVersion]);
 
   if (!user) {
     return (
@@ -166,6 +189,28 @@ export default function ProfilePage() {
           </span>
         </div>
 
+        {ordersError ? (
+          <div className="mb-6 flex flex-col gap-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 sm:flex-row sm:items-center sm:justify-between" role="alert">
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-amber-400" aria-hidden="true">cloud_off</span>
+              <div>
+                <p className="text-sm font-bold text-amber-200">Chưa đồng bộ được lịch sử từ máy chủ</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">Danh sách bên dưới có thể chỉ gồm dữ liệu đã lưu trên trình duyệt này.</p>
+              </div>
+            </div>
+            <button
+              className="min-h-10 shrink-0 cursor-pointer rounded-lg border border-amber-400/30 px-4 py-2 text-xs font-black uppercase tracking-wider text-amber-200 hover:bg-amber-400/10"
+              onClick={() => {
+                setServerSynced(false);
+                setOrdersRequestVersion((value) => value + 1);
+              }}
+              type="button"
+            >
+              Thử đồng bộ lại
+            </button>
+          </div>
+        ) : null}
+
         {visibleOrders.length === 0 ? (
           <div className="text-center py-10 border border-dashed border-navy-700 rounded-xl">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-navy-800 text-slate-400 mb-4">
@@ -178,13 +223,13 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href="/menu"
-                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-xl transition-all text-sm"
+                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-6 py-2.5 rounded-xl transition-all text-sm"
               >
                 <span className="material-symbols-outlined text-sm select-none">storefront</span>
                 Tiếp tục mua sắm
               </Link>
               <a
-                href="tel:0908464818"
+                href={OFFICIAL_PHONE_TEL}
                 className="inline-flex items-center justify-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 font-bold px-6 py-2.5 rounded-xl transition-all text-sm"
               >
                 <span className="material-symbols-outlined text-sm select-none">call</span>
@@ -200,8 +245,8 @@ export default function ProfilePage() {
                   <div>
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-base font-black text-slate-100">{order.code}</h3>
-                      <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusClass(order.status)}`}>
-                        {getStatusLabel(order.status)}
+                      <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${getOrderStatusClass(order.status)}`}>
+                        {getOrderStatusLabel(order.status)}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-2">{formatDateTime(order.createdAt)}</p>

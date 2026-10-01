@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import LoadingState from "@/components/LoadingState";
+import StatusPanel from "@/components/StatusPanel";
 
 interface Category {
   id: number;
@@ -32,13 +35,7 @@ interface CategoryContentProps {
   slug: string;
 }
 
-const CATEGORY_BANNERS: Record<string, string> = {
-  "cua-ghe": "https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0xKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw",
-  "tom": "https://lh3.googleusercontent.com/aida/AP1WRLvTSABaX3o0WsO5j3M6RcEY2BvkuFuc3dW7O4I5XJ1hexOsKbsL2g9KEa6CpH_UeJcID7KvRAZDK92XfJTLocZyeZ83ENKHuHOdJrrAh1Buzrs-jqmFr5TwtgD-nxnietcyZIzLlnK1JQTy6cejds2VaXndqTGd84Vv1ozKhspMSjEUXPP2Qf7rtY13o7DiEv3f6ZcZdpv7zuuTHlfhuQyIYyjMo3wMF7j1ncVHz-Qf885hHhMN3OaKKq8",
-  "ca": "https://lh3.googleusercontent.com/aida/AP1WRLsi1RZZ4Rl6aP-kqbXvKOA-Jr2RwQTvk_0KLo7E0shgqM92Ar6dWVDA9RZWR0_YcyYSokHXbxXV0_QYqwAZDQp6AaC_sjN1wqMFWnM3y33zvr7LvJyh7s0-W5pekpqma-iKwD3kIZH4YMt2j-MLU0xv43FCStCViNPt62YFeI1viG9qGH2Nsfr9djaGqppsa63K3GW0bIyg_uCt_budxjjW9zMWUDQRghm3d1koFPzzVdBiykVf3a6vNak",
-  "ngheu-so-oc": "https://lh3.googleusercontent.com/aida/AP1WRLsg0fcKe4-TF3SRCrYRkJotdZQB1RxnkxaFxLoQzp8chZZ1dSRVgeXN2jd7edd1j-hmI3dNj3RjuOnd7bJZQJWNnE4W1Q03ueZD8Oq4DvEAzuV8pqb5zPxRrOr3DAvEmM_JNPXOThTO_ijSLtneqLa6PyPCu9-uAHpSzNTGJpZmyjTyVAZuU_BOLJ4g6wmAWYqUFZBPwFTiDDmqX5_5JcNS_eKY9SNmo1EjcnM4ceu1ZmKXPQebp4AbeSw",
-  "bao-ngu-hau": "https://lh3.googleusercontent.com/aida/AP1WRLsg0fcKe4-TF3SRCrYRkJotdZQB1RxnkxaFxLoQzp8chZZ1dSRVgeXN2jd7edd1j-hmI3dNj3RjuOnd7bJZQJWNnE4W1Q03ueZD8Oq4DvEAzuV8pqb5zPxRrOr3DAvEmM_JNPXOThTO_ijSLtneqLa6PyPCu9-uAHpSzNTGJpZmyjTyVAZuU_BOLJ4g6wmAWYqUFZBPwFTiDDmqX5_5JcNS_eKY9SNmo1EjcnM4ceu1ZmKXPQebp4AbeSw",
-};
+const CATEGORY_BANNERS: Record<string, string> = {};
 
 const CATEGORY_ICONS: Record<string, string> = {
   "tom": "set_meal",
@@ -52,6 +49,8 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [requestVersion, setRequestVersion] = useState(0);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [sortBy, setSortBy] = useState("default");
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +60,12 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
   // 1. Fetch categories on mount
   useEffect(() => {
     let isMounted = true;
+    void Promise.resolve().then(() => {
+      if (isMounted) {
+        setLoading(true);
+        setLoadError(false);
+      }
+    });
     fetch("/api/categories")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch categories");
@@ -81,13 +86,16 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
       })
       .catch((err) => {
         console.error("Error fetching categories:", err);
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoadError(true);
+          setLoading(false);
+        }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [slug, requestVersion]);
 
   // 2. Fetch products once active category is resolved
   useEffect(() => {
@@ -118,6 +126,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
         console.error("Error fetching products:", err);
         if (isMounted) {
           setProducts([]);
+          setLoadError(true);
           setLoading(false);
         }
       });
@@ -125,7 +134,28 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
     return () => {
       isMounted = false;
     };
-  }, [activeCategory]);
+  }, [activeCategory, requestVersion]);
+
+  if (loadError) {
+    return (
+      <StatusPanel
+        announce="assertive"
+        description="Không thể kết nối danh mục và sản phẩm lúc này. Vui lòng thử tải lại."
+        eyebrow="Dịch vụ tạm thời gián đoạn"
+        icon="cloud_off"
+        onPrimaryAction={() => {
+          setActiveCategory(null);
+          setCategories([]);
+          setProducts([]);
+          setRequestVersion((value) => value + 1);
+        }}
+        primaryLabel="Thử tải lại"
+        secondaryHref="/menu"
+        secondaryLabel="Xem toàn bộ thực đơn"
+        title="Chưa thể tải danh mục"
+      />
+    );
+  }
 
   // Redirect to 404 if loading is complete and category doesn't exist
   if (!loading && categories.length > 0 && !activeCategory) {
@@ -138,7 +168,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
   };
 
   const getBanner = (category: Category) => {
-    return category.banner || CATEGORY_BANNERS[category.slug] || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=1200";
+    return category.banner || CATEGORY_BANNERS[category.slug] || "/media-placeholder.svg";
   };
 
   // Filter visible products
@@ -193,9 +223,11 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
             {/* Right Column: Banner Image (Resized to fit nicely without severe cropping) */}
             <div className="relative w-full md:w-auto flex-shrink-0 flex justify-center md:justify-end">
               <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[220px] lg:w-[400px] lg:h-[260px] rounded-2xl overflow-hidden border border-navy-700/80 bg-navy-900 shadow-2xl shadow-navy-950/80 group">
-                <img
+                <Image
                   alt={activeCategory.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 767px) 260px, 400px"
                   src={optimizeImageUrl(getBanner(activeCategory), 800)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent"></div>
@@ -210,7 +242,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
         {/* Side Navigation */}
         <aside className="lg:col-span-1 hidden lg:flex flex-col space-y-6 border-r border-navy-700/50 pr-6">
           <div>
-            <h3 className="text-xs font-extrabold uppercase text-orange-500 tracking-widest">Danh mục</h3>
+            <div className="text-xs font-extrabold uppercase text-orange-500 tracking-widest">Danh mục</div>
             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Hải sản tươi sống</p>
           </div>
           <nav className="flex flex-col gap-1.5">
@@ -253,20 +285,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, idx) => (
-                <div
-                  key={idx}
-                  className="bg-navy-800 rounded-lg overflow-hidden border border-navy-700 p-4 space-y-4 animate-pulse"
-                >
-                  <div className="aspect-square bg-navy-900 rounded-md"></div>
-                  <div className="h-4 bg-navy-700 rounded w-3/4"></div>
-                  <div className="h-3 bg-navy-700 rounded w-1/2"></div>
-                  <div className="h-6 bg-navy-700 rounded w-1/3 pt-2"></div>
-                  <div className="h-10 bg-navy-700 rounded w-full"></div>
-                </div>
-              ))}
-            </div>
+            <LoadingState compact label="Đang tải sản phẩm trong danh mục..." />
           ) : paginatedProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {paginatedProducts.map((product) => (
@@ -274,12 +293,15 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-navy-800 rounded-lg border border-navy-700/50">
-              <span className="material-symbols-outlined text-5xl text-slate-500 mb-4 select-none">
-                inbox
-              </span>
-              <p className="text-slate-400 font-medium">Không tìm thấy sản phẩm nào trong danh mục này.</p>
-            </div>
+            <StatusPanel
+              compact
+              description="Danh mục này hiện chưa có sản phẩm đang hiển thị. Bạn có thể xem các nhóm hải sản khác trong thực đơn."
+              eyebrow="Danh mục đang cập nhật"
+              icon="inventory_2"
+              primaryHref="/menu"
+              primaryLabel="Xem toàn bộ thực đơn"
+              title="Chưa có sản phẩm"
+            />
           )}
 
           {/* Pagination Controls */}
@@ -304,7 +326,7 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
                   }}
                   className={`w-10 h-10 flex items-center justify-center rounded font-extrabold text-xs transition-colors cursor-pointer ${
                     currentPage === idx + 1
-                      ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                      ? "bg-orange-500 text-navy-950 shadow-md shadow-orange-500/20"
                       : "border border-navy-700 text-slate-400 hover:bg-navy-800 hover:text-slate-200"
                   }`}
                 >
@@ -331,21 +353,21 @@ export default function CategoryContent({ slug }: CategoryContentProps) {
         <div className="max-w-[1600px] mx-auto px-4 md:px-6 grid grid-cols-1 sm:grid-cols-3 gap-10">
           <div className="flex flex-col items-center text-center space-y-4">
             <span className="material-symbols-outlined text-orange-500 text-[48px] select-none">verified</span>
-            <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">100% Tươi Sống</h4>
+            <h3 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">100% Tươi Sống</h3>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs font-medium">
               Cam kết giao sống tận tay khách hàng trong khu vực nội thành.
             </p>
           </div>
           <div className="flex flex-col items-center text-center space-y-4">
             <span className="material-symbols-outlined text-orange-500 text-[48px] select-none">local_shipping</span>
-            <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Giao Hàng Nhanh</h4>
+            <h3 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Giao Hàng Nhanh</h3>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs font-medium">
               Giao nhanh trong 2h đối với khu vực TP.HCM và Hà Nội.
             </p>
           </div>
           <div className="flex flex-col items-center text-center space-y-4">
             <span className="material-symbols-outlined text-orange-500 text-[48px] select-none">support_agent</span>
-            <h4 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Hỗ Trợ 24/7</h4>
+            <h3 className="text-base font-extrabold text-slate-100 uppercase tracking-widest">Hỗ Trợ 24/7</h3>
             <p className="text-xs text-slate-400 leading-relaxed max-w-xs font-medium">
               Đội ngũ chăm sóc khách hàng luôn sẵn sàng phục vụ mọi lúc.
             </p>

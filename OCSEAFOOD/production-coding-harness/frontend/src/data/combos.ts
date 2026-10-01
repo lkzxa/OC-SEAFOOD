@@ -12,95 +12,196 @@ export interface Combo {
   items: string[];
 }
 
+export interface ComboApiResponse {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  originalPrice?: number | string | null;
+  price?: number | string | null;
+  showContact?: boolean;
+  image: string;
+  tag?: string | null;
+  discountBadge?: string | null;
+  items: string[];
+}
+
+export const mapApiCombo = (combo: ComboApiResponse): Combo => ({
+  id: combo.id,
+  name: combo.name,
+  slug: combo.slug,
+  description: combo.description,
+  originalPrice: combo.originalPrice ? Number(combo.originalPrice) : undefined,
+  price: combo.price ? Number(combo.price) : undefined,
+  showContact: combo.showContact || false,
+  image: combo.image,
+  tag: combo.tag || undefined,
+  discountBadge: combo.discountBadge || undefined,
+  items: combo.items,
+});
+
 export const COMBOS: Combo[] = [
   {
     id: 9001,
-    name: "Combo Hải Sản Hoàng Gia",
+    name: "Combo Gia Đình Tiết Kiệm",
     slug: "combo-hai-san-hoang-gia",
-    description: "Set bao gồm: King Crab (1.5kg), 2 Tôm Hùm Canada, 5 Bào Ngư Hàn Quốc, Sò Điệp Nhật áp chảo.",
-    originalPrice: 7500000,
-    price: 6350000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCf7a6RxEO1vB73aKYmRIRDah7wSPW-C1gGL5-XkJU5jbKr0nbysvyD-C5AMGkjg0itfZKd2Z4PXgcO3csDHbrnfuBeW7vxuxR2iAR79v64Z0--2KOiwUqszSqc3ubtgmXmMDDeYRfa8AeBsd6wiQjyAjhChyYyBv2Mx-dEwqt4QsU-FNVv5L1GShmqEU_qJc6t1uPXLgtisHjTGpFiNwt9H8qd_nZGRgYr998yTdWfH01vI8xvzjQVNhBgH0CcWomu1RuCz_JvhJ0",
-    discountBadge: "-15%",
+    description: "Set hải sản gọn cho 3-4 người, cân đối giữa tôm hùm, sò điệp, hàu và bào ngư để gia đình dễ dùng trong bữa cuối tuần.",
+    price: 2000000,
+    image: "/Banner.png",
+    tag: "2 TRIỆU",
     items: [
-      "1 King Crab sống nguyên con (1.5kg)",
-      "2 Tôm Hùm Canada tươi sống nhập khẩu",
-      "5 Bào Ngư Hàn Quốc thượng hạng",
-      "Sò Điệp Nhật áp chảo sốt bơ tỏi thơm lừng"
+      "Tôm Hùm Xanh khoảng 1kg",
+      "Sò Điệp Sống khoảng 0.5kg",
+      "Hàu Vàng Hàn Quốc khoảng 1kg",
+      "Bào Ngư Đông Lạnh khoảng 0.5kg",
+      "Sốt bơ tỏi và muối ớt xanh dùng kèm"
     ]
   },
   {
     id: 9002,
     name: "Set Lẩu Hải Sản Đại Dương",
     slug: "set-lau-hai-san-dai-duong",
-    description: "Nước dùng lẩu đặc biệt, 1kg Tôm Càng, Mực lá, Ngao hai cồi, Cá hồi Nauy, Rau nấm đi kèm.",
-    price: 2890000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDHnBDbiAYEdjJ5rd06Icy6xWoxw8t37Uqtfw447_WshQ20keFiFR2brdjaBNR-v7v7cSQ-mBTH03RkYsR2xk8qpYe2DUBDlhlaBk_ns3ET8_gXZuvYjge8wa_do8FUph04YFiFkLYS2svjd8z-rI4K9FNmm1L2pC9szu_EPUBNSoHanuuXUTWXPgbXu47FaWGyFdmXBxiKZXUgigDLvTlCwqT40i1RhUVjzBvW6cgrB_DucrCwZvxHzql6EVbARQakJKkoV_QUJt4",
+    description: "Set lẩu 4-5 người dùng Tôm Hùm Alaska, Tôm Hùm Xanh, Sò Điệp Sống và Bào Ngư Hàn Quốc, phù hợp tiệc gia đình.",
+    price: 3500000,
+    image: "/Banner.png",
     tag: "POPULAR",
     items: [
-      "Nước lẩu chua cay Tomyum đặc chế từ đầu bếp Ốc Seafood",
-      "1kg Tôm Càng xanh tươi sống bật nhảy",
-      "Mực lá Phan Thiết dày cơm, thái khoanh giòn ngọt",
-      "Ngao hai cồi lớn chắc thịt",
-      "Cá hồi Nauy tươi cắt lát",
-      "Đĩa rau nấm thập cẩm, mì tươi ăn kèm"
+      "Tôm Hùm Alaska khoảng 1kg",
+      "Tôm Hùm Xanh khoảng 1kg",
+      "Sò Điệp Sống khoảng 1kg",
+      "Bào Ngư Hàn Quốc khoảng 0.5kg",
+      "Nước lẩu hải sản, rau nấm và mì tươi ăn kèm"
     ]
   },
   {
     id: 9003,
-    name: "Combo Nướng BBQ Special",
+    name: "Combo BBQ Hải Sản Cao Cấp",
     slug: "combo-nuong-bbq-special",
-    description: "10 Tôm Sú nướng muối ớt, Mực trứng nướng sa tế, 10 Hàu mỡ hành, Bạch tuộc sốt cay.",
-    price: 1950000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBWROMU8tRJjSla2O1w_YNEbcFzMb4pGK01OXsgmyhz6EK7nSmm9tuW1XoRvwfCryte0lYV-yU3BG5FNSF7mZgAoDywbQbDsH3Zz51xFp8rBYo7FWb_Rg85KiuitBQjBWjDHv8v9paTbGJV5er5rg6swCtq2cNLBdv792g4RyHHOX6Ge7IJvMlaNqdMYSWnxTMvHgjAR5WE5X4QOQ4-owM7b0AmtEBXj0jXUT9UbJCKisD7habqtRE2NjSZyWC43Q1uGJK0CgrKgQc",
+    description: "Combo nướng 5-6 người với Tôm Hùm Xanh, Cua Nâu Sofima, Sò Điệp, Hàu Vàng và Bào Ngư; phù hợp tiệc sân vườn.",
+    price: 5000000,
+    image: "/Banner.png",
     items: [
-      "10 Tôm Sú lớn nướng muối ớt cay nồng đậm vị",
-      "Mực trứng nướng sa tế giòn giòn béo béo",
-      "10 Hàu sữa Thái Bình Dương nướng mỡ hành thơm phức",
-      "Bạch tuộc nướng sốt cay đậm đà chuẩn vị"
+      "Tôm Hùm Xanh khoảng 1.5kg nướng bơ tỏi hoặc muối ớt",
+      "Cua Nâu Sofima khoảng 1kg",
+      "Sò Điệp Sống khoảng 1kg",
+      "Hàu Vàng Hàn Quốc khoảng 1kg",
+      "Bào Ngư Hàn Quốc khoảng 0.5kg, kèm sốt BBQ hải sản"
     ]
   },
   {
     id: 9004,
-    name: "Set Sashimi Thượng Hạng",
+    name: "Combo Hải Sản Hoàng Gia",
     slug: "set-sashimi-thuong-hang",
-    description: "Cá hồi Nauy, Cá trích ép trứng, Sò đỏ Nhật, Bạch tuộc, Tôm ngọt Amaebi (Dành cho 5 khách).",
-    price: 3450000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuB1hcEW7Y6VFVrcWBFhM7XBe-M6pid0MIL2A4bsdbNQP4ahWXlVPyqWTYMg_2SUY6gxxoqTfvmscwXR_xHy_H6E3n9rAYKlg6eAIOQeBFejhBeYBkJO-FBQXuS3MJO9liB7cXby8cFgy2NkbjvIaNw_Mo6Ut8ksvYn5O6m1SjrMmYqP20L3_jaOQBoRo31sOPXDEbq9Z1S76tTChDffs5KFrKIwuBoYNuTi_AFssrgR7sKkm9FKbGyrrgvGEddVrzhel9yx3NlYI8s",
+    description: "Set tiệc 6-8 người từ Cua King Xanh, Tôm Hùm Bông, Bào Ngư Úc, Sò Điệp Sống và Bào Ngư Hàn Quốc.",
+    originalPrice: 8500000,
+    price: 7500000,
+    image: "/Banner.png",
+    discountBadge: "-12%",
     items: [
-      "Sashimi Cá hồi Nauy fillet béo ngậy thái dày",
-      "Sashimi Cá trích ép trứng Nhật Bản giòn sần sật",
-      "Sashimi Sò đỏ Hokkigai tươi ngọt tự nhiên",
-      "Sashimi Bạch tuộc Tako luộc chín thái mỏng",
-      "Sashimi Tôm ngọt Amaebi ngọt lịm cao cấp",
-      "Tặng kèm set Wasabi tươi, gừng hồng Nhật và nước tương"
+      "Cua King Xanh sống tuyển size lớn, khoảng 1.5kg",
+      "Tôm Hùm Bông thiên nhiên khoảng 1kg",
+      "Bào Ngư Úc Ngọc Bích khoảng 1kg",
+      "Sò Điệp Sống khoảng 1kg",
+      "Bào Ngư Hàn Quốc khoảng 0.5kg"
     ]
   },
   {
     id: 9005,
-    name: "Combo Cua Cà Mau Sốt",
+    name: "Combo Tiệc Gia Đình Premium",
     slug: "combo-cua-ca-mau-sot",
-    description: "3 Cua Cà Mau lớn (800g/con) sốt Trứng muối hoặc sốt Singapore, kèm bánh mì nóng giòn.",
-    price: 2200000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDsIEm9JE51ckFL8T11IKcVqVUjwo3Hvx50t4_Sgx2Tl3zmakRCgVzJ6eCtojatljmrRJli-Nw3uF3sonxCxxaoxikYrmyoUX1Kv-Zacn0NarhNndOlaN5zSP268pPD6kS_-pd1o741S0da5Q380r70kFmOh1CqZjW7h4YARWlku-jkzXAEHJLmbAHi8TB646NhijBu1DR3znQ-Lzr7XyNK9fLzqiKIsFwsMpT2_Techq4_FupmQPZ1RriJzQSVAL56o76-rwRdJSo",
+    description: "Combo 8-10 người dành cho tiệc gia đình cao cấp với Cua King Đỏ Na Uy, Tôm Hùm Alaska, Bào Ngư Úc và Cá Bơn Hàn Quốc.",
+    price: 10000000,
+    image: "/Banner.png",
     items: [
-      "3 Cua Cà Mau lớn chắc thịt đầy gạch (khoảng 800g/con)",
-      "Lựa chọn Sốt Trứng Muối hoàng kim béo ngậy hoặc Sốt Ớt Singapore cay cay nồng nàn",
-      "4 ổ Bánh mì đặc ruột nóng hổi giòn rụm dùng kèm nước sốt thần thánh"
+      "Cua King Đỏ Na Uy khoảng 2kg",
+      "Tôm Hùm Alaska khoảng 2kg",
+      "Bào Ngư Úc Ngọc Bích khoảng 1kg",
+      "Cá Bơn Hàn Quốc khoảng 1kg",
+      "Sò Điệp Sống khoảng 1kg, kèm sốt chế biến"
     ]
   },
   {
     id: 9006,
-    name: "Set Nghêu Sò Toàn Diện",
+    name: "Set Đại Tiệc Sashimi & BBQ",
     slug: "set-ngheu-so-toan-dien",
-    description: "Ốc hương cháy tỏi, Ngao hai cồi hấp sả, Sò dương nướng mỡ hành, Ốc móng tay xào rau muống.",
-    price: 1680000,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDTBlWqWPDBWt2EjjpKWQp3x1SXsSAdGspaFJnE2uORAZq6vbJGJHlLbOvzDUfPsf8395e6ePT1dwkYECkMuHV8vaLROPZZxzMBiccXVZ7YZeBOTvOxiygWRcQfJkymgJQRoOmtnescNNHoOMTq0b32UZlYqA5PBn7B17wijIQQ-XJWFrastx9q1u6-sXBEDtxQ7eBlXg4t1oC2GuPIoBB3T-eDKbO4HJDa07MnG08tYVHuZhZYZR1969ZQv2GCIUWHiJfKhKFEI5o",
+    description: "Set 10-12 người kết hợp sashimi và BBQ từ Cá Bơn Vàng, Ốc Vòi Voi Ngà, Ốc Tsubugai, Tôm Hùm Bông và Sò Điệp.",
+    price: 15000000,
+    image: "/Banner.png",
+    tag: "PREMIUM",
     items: [
-      "Ốc hương thiên nhiên xào bơ tỏi thơm giòn quyến rũ",
-      "Ngao hai cồi hấp sả ớt nước trong ngọt thanh thanh",
-      "Sò dương lớn nướng mỡ hành đậu phộng thơm bùi",
-      "Ốc móng tay xào rau muống tỏi giòn ngọt xanh mướt"
+      "Cá Bơn Vàng khoảng 2kg thái sashimi",
+      "Ốc Vòi Voi Ngà khoảng 1.5kg",
+      "Ốc Tsubugai khoảng 1kg",
+      "Tôm Hùm Bông thiên nhiên khoảng 2kg",
+      "Sò Điệp Sống khoảng 1.5kg, kèm gia vị sashimi và BBQ"
+    ]
+  },
+  {
+    id: 9007,
+    name: "Combo King Crab Party",
+    slug: "combo-king-crab-party",
+    description: "Set đặt trước cho 12-15 người, tập trung Cua King Xanh, Cua King Đỏ, Tôm Hùm Bông, Bào Ngư Úc và Sò Điệp.",
+    price: 20000000,
+    showContact: true,
+    image: "/Banner.png",
+    tag: "ĐẶT TRƯỚC",
+    items: [
+      "Cua King Xanh khoảng 3kg",
+      "Cua King Đỏ Na Uy khoảng 3kg",
+      "Tôm Hùm Bông thiên nhiên khoảng 2kg",
+      "Bào Ngư Úc Ngọc Bích khoảng 2kg",
+      "Sò Điệp Sống khoảng 2kg, tư vấn chế biến theo tiệc"
+    ]
+  },
+  {
+    id: 9008,
+    name: "Combo Tiệc Công Ty VIP",
+    slug: "combo-tiec-cong-ty-vip",
+    description: "Set tư vấn riêng cho 18-25 người, phù hợp tiệc công ty, khai trương hoặc chiêu đãi đối tác với nhiều dòng hải sản cao cấp.",
+    price: 30000000,
+    showContact: true,
+    image: "/Banner.png",
+    tag: "VIP",
+    items: [
+      "Cua King Xanh và Cua King Đỏ tổng khoảng 6kg",
+      "Tôm Hùm Bông và Tôm Hùm Alaska tổng khoảng 5kg",
+      "Bào Ngư Úc Ngọc Bích khoảng 2kg",
+      "Cá Bơn Vàng khoảng 2kg",
+      "Sò Điệp Sống, Ốc Vòi Voi và hàu theo ngân sách tiệc"
+    ]
+  },
+  {
+    id: 9009,
+    name: "Set Luxury Seafood Banquet",
+    slug: "set-luxury-seafood-banquet",
+    description: "Set luxury cho 25-35 người, ưu tiên King Crab, tôm hùm, bào ngư, sashimi cá bơn và ốc vòi voi cho bàn tiệc cao cấp.",
+    price: 40000000,
+    showContact: true,
+    image: "/Banner.png",
+    tag: "LUXURY",
+    items: [
+      "Cua King Xanh và Cua King Đỏ tổng khoảng 8kg",
+      "Tôm Hùm Bông, Tôm Hùm Alaska và Tôm Hùm Xanh tổng khoảng 7kg",
+      "Bào Ngư Úc và Bào Ngư Hàn Quốc tổng khoảng 4kg",
+      "Cá Bơn Vàng sashimi khoảng 3kg",
+      "Ốc Vòi Voi Ngà, Sò Điệp Sống và Hàu Vàng Hàn Quốc theo set tiệc"
+    ]
+  },
+  {
+    id: 9010,
+    name: "Combo Đại Tiệc Hoàng Gia",
+    slug: "combo-dai-tiec-hoang-gia",
+    description: "Combo cao cấp nhất cho 35-50 người, thiết kế theo ngân sách 50 triệu với các dòng cua king, tôm hùm, bào ngư, cá bơn và ốc vòi voi.",
+    price: 50000000,
+    showContact: true,
+    image: "/Banner.png",
+    tag: "HOÀNG GIA",
+    items: [
+      "Cua King Xanh và Cua King Đỏ chọn size lớn theo ngày hàng",
+      "Tôm Hùm Bông, Tôm Hùm Alaska và Tôm Hùm Xanh chia theo món",
+      "Bào Ngư Úc Ngọc Bích, Bào Ngư Hàn Quốc và Bào Ngư Đông Lạnh",
+      "Cá Bơn Vàng, Cá Bơn Hàn Quốc, Ốc Vòi Voi Ngà và Ốc Tsubugai",
+      "Tư vấn menu chế biến, chia món và lịch giao riêng cho sự kiện"
     ]
   }
 ];

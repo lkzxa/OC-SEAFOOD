@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { MOCK_BLOG_POSTS } from "@/data/mockData";
+import Image from "next/image";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import StatusPanel from "@/components/StatusPanel";
+
+export const dynamic = "force-dynamic";
 
 interface BlogPost {
   id: number;
   title: string;
   slug: string;
   content: string;
+  excerpt?: string | null;
   image: string | null;
+  imageAlt?: string | null;
   isVisible: boolean;
   authorId: number;
   createdAt: string;
@@ -15,18 +20,16 @@ interface BlogPost {
 }
 
 async function getPosts(): Promise<BlogPost[]> {
-  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-  if (!backendUrl) return MOCK_BLOG_POSTS;
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
   try {
     const res = await fetch(`${backendUrl}/posts`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
-    if (!res.ok) return MOCK_BLOG_POSTS;
+    if (!res.ok) throw new Error("Blog service unavailable");
     const data = await res.json();
-    const posts = Array.isArray(data) ? data : (data.data ?? []);
-    return posts.length > 0 ? posts : MOCK_BLOG_POSTS;
+    return Array.isArray(data) ? data : (data.data ?? []);
   } catch {
-    return MOCK_BLOG_POSTS;
+    throw new Error("Blog service unavailable");
   }
 }
 
@@ -78,12 +81,13 @@ export default async function BlogPage() {
               className="bg-navy-800 rounded-lg overflow-hidden border border-navy-700 hover:border-orange-500/50 transition-all flex flex-col group"
             >
               {/* Post Image */}
-              <Link href={`/blog/${post.id}`} className="aspect-video relative overflow-hidden bg-navy-900 block">
-                <img
-                  alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                  src={optimizeImageUrl(post.image, 800) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
+              <Link href={`/blog/${post.slug || post.id}`} className="aspect-video relative overflow-hidden bg-navy-900 block">
+                <Image
+                  alt={post.imageAlt || post.title}
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 767px) 100vw, 33vw"
+                  src={optimizeImageUrl(post.image, 800) || "/media-placeholder.svg"}
                 />
               </Link>
 
@@ -103,17 +107,17 @@ export default async function BlogPage() {
 
                 {/* Title */}
                 <h2 className="text-lg font-bold text-slate-100 group-hover:text-orange-500 transition-colors mb-3 line-clamp-2">
-                  <Link href={`/blog/${post.id}`}>{post.title}</Link>
+                  <Link href={`/blog/${post.slug || post.id}`}>{post.title}</Link>
                 </h2>
 
                 {/* Excerpt */}
                 <p className="text-slate-300 text-xs md:text-sm line-clamp-3 mb-5 leading-relaxed">
-                  {getExcerpt(post.content)}
+                  {post.excerpt?.trim() || getExcerpt(post.content)}
                 </p>
 
                 {/* Read more link */}
                 <Link
-                  href={`/blog/${post.id}`}
+                  href={`/blog/${post.slug || post.id}`}
                   className="mt-auto text-orange-500 hover:text-orange-600 font-extrabold text-xs uppercase tracking-wider flex items-center gap-1 w-fit group/btn transition-colors"
                 >
                   Đọc tiếp 
@@ -126,12 +130,15 @@ export default async function BlogPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-navy-800 rounded-lg border border-navy-700/50">
-          <span className="material-symbols-outlined text-5xl text-slate-500 mb-4 select-none">
-            rss_feed
-          </span>
-          <p className="text-slate-400 font-medium">Hiện tại chưa có bài viết nào được đăng tải.</p>
-        </div>
+        <StatusPanel
+          compact
+          description="Các bài cẩm nang mới đang được biên tập. Bạn có thể xem thực đơn trong lúc chờ nội dung tiếp theo."
+          eyebrow="Cẩm nang vào bếp"
+          icon="menu_book"
+          primaryHref="/menu"
+          primaryLabel="Xem thực đơn"
+          title="Chưa có bài viết"
+        />
       )}
     </div>
   );

@@ -8,6 +8,7 @@ const mockPush = vi.fn();
 const mockSearchParams = {
   get: vi.fn(),
 };
+const mockScrollTo = vi.fn();
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/',
@@ -21,6 +22,15 @@ describe('Root Layout Elements', () => {
   beforeEach(() => {
     useCartStore.getState().clearCart();
     mockPush.mockClear();
+    mockScrollTo.mockClear();
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+    Object.defineProperty(window, "scrollTo", {
+      value: mockScrollTo,
+      writable: true,
+    });
   });
 
   describe('Header Component', () => {
@@ -41,6 +51,15 @@ describe('Root Layout Elements', () => {
       expect(screen.getAllByText('COMBO').length).toBeGreaterThan(0);
       expect(screen.getAllByText('CẨM NANG VÀO BẾP').length).toBeGreaterThan(0);
       expect(screen.getAllByText('GIỚI THIỆU').length).toBeGreaterThan(0);
+    });
+
+    it('should scroll to the top when a main nav link is clicked', () => {
+      render(<Header />);
+
+      const menuLinks = screen.getAllByText('MENU');
+      fireEvent.click(menuLinks[0]);
+
+      expect(mockScrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
     });
 
     it('should display cart badge starting at 0 count', () => {
@@ -77,7 +96,7 @@ describe('Root Layout Elements', () => {
       render(<Header />);
       
       // Click burger menu toggle button
-      const toggleButton = screen.getByRole('button', { name: /Toggle menu/i });
+      const toggleButton = screen.getByRole('button', { name: /Mở menu/i });
       expect(toggleButton).not.toBeNull();
 
       // Initially close icon is not present
@@ -113,7 +132,7 @@ describe('Root Layout Elements', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
       
       // Open mobile menu
-      const toggleButton = screen.getByRole('button', { name: /Toggle menu/i });
+      const toggleButton = screen.getByRole('button', { name: /Mở menu/i });
       fireEvent.click(toggleButton);
       
       const searchInputs = screen.getAllByPlaceholderText('Tìm kiếm hải sản...');
@@ -154,7 +173,7 @@ describe('Root Layout Elements', () => {
       render(<Footer />);
       
       expect(screen.getByPlaceholderText('Email của bạn')).not.toBeNull();
-      expect(screen.getByRole('button', { name: /Send/i })).not.toBeNull();
+      expect(screen.getByRole('button', { name: /Đăng ký nhận bản tin/i })).not.toBeNull();
     });
   });
 });

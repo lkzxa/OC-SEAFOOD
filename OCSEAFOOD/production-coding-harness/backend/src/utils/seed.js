@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 const { uploadLocalFile } = require('../config/cloudinary');
+const { parseAdminInput, upsertAdmin } = require('../../create-admin');
 
 const prisma = new PrismaClient();
 
@@ -70,26 +71,11 @@ async function getProductImages(relDir) {
 async function main() {
   console.log('🌱 Starting database seeding with scanned image paths...');
 
-  // 1. Create Admin User
-  const adminEmail = 'admin@ocseafood.vn';
-  let admin = await prisma.user.findUnique({
-    where: { email: adminEmail }
-  });
-
-  if (!admin) {
-    const hashedPassword = await bcrypt.hash('admin123456', 10);
-    admin = await prisma.user.create({
-      data: {
-        email: adminEmail,
-        password: hashedPassword,
-        name: 'Quản trị viên OCSEAFOOD',
-        role: 'ADMIN'
-      }
-    });
-    console.log(`✅ Created Admin user: ${adminEmail}`);
-  } else {
-    console.log(`ℹ️ Admin user already exists: ${adminEmail}`);
-  }
+  // 1. Create or update the explicitly configured Admin account.
+  // This legacy full seed is destructive for products, so it is never run at startup.
+  const adminInput = parseAdminInput(process.env);
+  const { user: admin, action: adminAction } = await upsertAdmin(prisma, adminInput, bcrypt);
+  console.log(`✅ Admin account ${adminAction}: ${admin.email}`);
 
   // 2. Create Categories
   // NOTE: banner source files (/uploads/<timestamp>-<random>.png) were previously uploaded
@@ -560,7 +546,7 @@ async function main() {
       title: 'Cách hấp cua hoàng đế ngon nhất tại nhà chuẩn 5 sao',
       slug: 'cach-hap-cua-hoang-de-ngon-nhat-tai-nha',
       content: 'Cua hoàng đế hấp bia sả gừng là món ăn đơn giản nhưng giữ trọn vị ngon ngọt tinh khiết tự nhiên của sớ thịt cua dày nạc...',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      image: '/media-placeholder.svg',
       isVisible: true,
       authorId: admin.id
     },
@@ -568,7 +554,7 @@ async function main() {
       title: 'Bí quyết chọn cua Năm Căn Cà Mau nhiều thịt đầy gạch',
       slug: 'bi-quyet-chon-cua-nam-can-ca-mau-nhieu-thit-day-gach',
       content: 'Cua Năm Căn Cà Mau nổi tiếng chắc ngọt thơm ngon nhưng để chọn được cua chuẩn nhiều thịt và gạch béo bạn cần lưu ý phần mai và yếm...',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCw0FsNUIfEqFdwlA2XXjkc1OX3Z_4TChMVrC8Il63AjzyK7Cthamul_cIIp6AVCRkS4KdyUUktW0eKE15gXNtM-4P1vReWSOLg2_o7bdA3n65p5KtM09Q3cHJHeIzBC0Tm35kcMHsjvs6G-XfjAPnxVtVsorIFyhU4XKKXPT4fHqp1gBr69GH7r8FQDpNnjkKNnA0X8-xRgqUeMCd0gbElUDElnkNKF_MG6cRUyIFYsMMvHp-DsL-dy4VbZstCBRtCV37QfabGOBw',
+      image: '/media-placeholder.svg',
       isVisible: true,
       authorId: admin.id
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 
@@ -28,18 +29,32 @@ interface RelatedPostsSectionProps {
 export default function RelatedPostsSection({ excludeId, limit = 3 }: RelatedPostsSectionProps) {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [requestVersion, setRequestVersion] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
+    void Promise.resolve().then(() => {
+      if (isMounted) {
+        setLoading(true);
+        setLoadError(false);
+      }
+    });
     fetch("/api/posts")
-      .then((res) => (res.ok ? res.json() : []))
+      .then((res) => {
+        if (!res.ok) throw new Error("Related posts unavailable");
+        return res.json();
+      })
       .then((json) => {
         if (!isMounted) return;
         const list: BlogPost[] = Array.isArray(json) ? json : (json.data ?? []);
         setPosts(list.filter((p) => p.isVisible && p.id !== excludeId).slice(0, limit));
       })
       .catch(() => {
-        if (isMounted) setPosts([]);
+        if (isMounted) {
+          setPosts([]);
+          setLoadError(true);
+        }
       })
       .finally(() => {
         if (isMounted) setLoading(false);
@@ -47,9 +62,28 @@ export default function RelatedPostsSection({ excludeId, limit = 3 }: RelatedPos
     return () => {
       isMounted = false;
     };
-  }, [excludeId, limit]);
+  }, [excludeId, limit, requestVersion]);
 
-  if (loading || posts.length === 0) return null;
+  if (loading) return null;
+
+  if (loadError) {
+    return (
+      <section className="mt-16 border-t border-navy-700/50 pt-8" aria-live="polite">
+        <div className="flex flex-col gap-3 rounded-xl border border-navy-700 bg-navy-800/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-400">Chưa tải được bài viết gợi ý.</p>
+          <button
+            className="min-h-10 cursor-pointer rounded-lg border border-navy-700 px-4 py-2 text-xs font-black uppercase tracking-wider text-orange-400 hover:bg-navy-700"
+            onClick={() => setRequestVersion((value) => value + 1)}
+            type="button"
+          >
+            Thử lại
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (posts.length === 0) return null;
 
   return (
     <section className="mt-16 pt-10 border-t border-navy-700/50">
@@ -64,12 +98,12 @@ export default function RelatedPostsSection({ excludeId, limit = 3 }: RelatedPos
             className="group bg-navy-800 rounded-lg overflow-hidden border border-navy-700 hover:border-orange-500/50 transition-all flex flex-col"
           >
             <div className="aspect-video relative overflow-hidden bg-navy-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 alt={p.imageAlt || p.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-                src={optimizeImageUrl(p.image, 600) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800"}
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                fill
+                sizes="(max-width: 767px) 100vw, 33vw"
+                src={optimizeImageUrl(p.image, 600) || "/media-placeholder.svg"}
               />
             </div>
             <div className="p-4 flex flex-col flex-1">

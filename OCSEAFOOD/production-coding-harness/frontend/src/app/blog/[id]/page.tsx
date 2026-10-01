@@ -1,7 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { MOCK_BLOG_POSTS } from "@/data/mockData";
+import { cache } from "react";
 import BlogSidebar from "@/components/BlogSidebar";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
 import { sanitizeHtml } from "@/utils/sanitizeHtml";
@@ -11,6 +12,7 @@ interface BlogPost {
   title: string;
   slug: string;
   content: string;
+  excerpt?: string | null;
   image: string | null;
   isVisible: boolean;
   authorId: number;
@@ -28,26 +30,21 @@ interface PageProps {
   }>;
 }
 
-async function getPostDetail(id: string): Promise<BlogPost | null> {
-  const backendUrl = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-  if (!backendUrl) {
-    const mock = MOCK_BLOG_POSTS.find(p => String(p.id) === id);
-    return mock ? { ...mock, metaTitle: null, metaDescription: null, metaKeywords: null, imageAlt: null } : null;
-  }
+const getPostDetail = cache(async (id: string): Promise<BlogPost | null> => {
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
   try {
     const res = await fetch(`${backendUrl}/posts/${id}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
+    if (res.status === 404) return null;
     if (!res.ok) {
-      const mock = MOCK_BLOG_POSTS.find(p => String(p.id) === id);
-      return mock ? { ...mock, metaTitle: null, metaDescription: null, metaKeywords: null, imageAlt: null } : null;
+      throw new Error("Blog service unavailable");
     }
     return await res.json();
   } catch {
-    const mock = MOCK_BLOG_POSTS.find(p => String(p.id) === id);
-    return mock ? { ...mock, metaTitle: null, metaDescription: null, metaKeywords: null, imageAlt: null } : null;
+    throw new Error("Blog service unavailable");
   }
-}
+});
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
@@ -61,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const strippedContent = post.content.replace(/<[^>]+>/g, "");
   
   const title = post.metaTitle || post.title;
-  const description = post.metaDescription || strippedContent.substring(0, 160) + "...";
+  const description = post.metaDescription || post.excerpt || strippedContent.substring(0, 160) + "...";
   const keywords = post.metaKeywords || "hải sản, ốc seafood, cẩm nang vào bếp";
 
   return {
@@ -133,11 +130,13 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
 
           {/* Feature Image */}
           {post.image && (
-            <div className="rounded-lg overflow-hidden aspect-video bg-navy-800 border border-navy-700">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="relative rounded-lg overflow-hidden aspect-video bg-navy-800 border border-navy-700">
+              <Image
                 alt={post.imageAlt || post.title}
-                className="w-full h-full object-cover"
+                className="object-cover"
+                fill
+                sizes="(max-width: 1023px) 100vw, 70vw"
+                preload
                 src={optimizeImageUrl(post.image, 1000)}
               />
             </div>

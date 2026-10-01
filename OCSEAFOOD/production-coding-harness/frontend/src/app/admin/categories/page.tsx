@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -33,12 +34,8 @@ export default function AdminCategoriesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const editingCategory = useMemo(
-    () => categories.find((category) => category.id === editingId) || null,
-    [categories, editingId]
-  );
-
   const loadData = async () => {
+    await Promise.resolve();
     setLoading(true);
     setErrorMsg(null);
 
@@ -57,21 +54,19 @@ export default function AdminCategoriesPage() {
   };
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void Promise.resolve().then(loadData);
   }, []);
 
-  useEffect(() => {
-    if (!editingCategory) return;
-
+  const startEditing = (category: Category) => {
+    setEditingId(category.id);
     setForm({
-      name: editingCategory.name,
-      slug: editingCategory.slug,
-      description: editingCategory.description || "",
-      banner: editingCategory.banner || "",
-      displayOrder: editingCategory.displayOrder ?? 0,
+      name: category.name,
+      slug: category.slug,
+      description: category.description || "",
+      banner: category.banner || "",
+      displayOrder: category.displayOrder ?? 0,
     });
-  }, [editingCategory]);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -197,7 +192,7 @@ export default function AdminCategoriesPage() {
                 placeholder="Ví dụ: 1"
               />
             </Field>
-            <button type="submit" disabled={saving || loading} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm">
+            <button type="submit" disabled={saving || loading} className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm">
               {saving ? "Đang lưu..." : editingId ? "Cập nhật danh mục" : "Tạo danh mục"}
             </button>
           </form>
@@ -230,7 +225,7 @@ export default function AdminCategoriesPage() {
                       <td className="py-4 px-4 text-xs text-slate-400">
                         {category.banner ? (
                           <div className="relative h-10 w-24 rounded overflow-hidden border border-navy-800 bg-navy-950">
-                            <img src={category.banner} alt={category.name} className="w-full h-full object-cover" />
+                            <Image src={category.banner} alt={category.name} className="object-cover" fill sizes="96px" />
                           </div>
                         ) : (
                           <span className="text-slate-500 italic">Không có banner</span>
@@ -240,7 +235,7 @@ export default function AdminCategoriesPage() {
                         {category.description || "Chưa có mô tả."}
                       </td>
                       <td className="py-4 px-4 text-right space-x-2">
-                        <button type="button" onClick={() => setEditingId(category.id)} className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer">
+                        <button type="button" onClick={() => startEditing(category)} className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer">
                           Sửa
                         </button>
                         <button type="button" onClick={() => handleDelete(category)} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer">

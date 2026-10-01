@@ -38,6 +38,7 @@ const BlogPostSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   slug: z.string().min(1, 'Slug is required').regex(SLUG_REGEX, 'Invalid slug format'),
   content: z.string().min(1, 'Content is required'),
+  excerpt: z.string().max(240, 'Excerpt limit 240 chars').optional().nullable(),
   image: z.string().optional().nullable(),
   isVisible: z.boolean().default(true),
   metaTitle: z.string().max(100, 'Meta title limit 100 chars').optional().nullable(),

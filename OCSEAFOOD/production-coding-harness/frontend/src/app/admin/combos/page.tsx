@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
-import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
+import { getAuthHeaders, getErrorMessage, unwrapCollection } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Combo {
   id: number;
@@ -41,15 +42,17 @@ export default function AdminCombosPage() {
       }
       const data = await res.json();
       setCombos(unwrapCollection<Combo>(data));
-    } catch (err: any) {
-      setErrorMsg(err.message || "Đã xảy ra lỗi.");
+    } catch (err: unknown) {
+      setErrorMsg(getErrorMessage(err, "Đã xảy ra lỗi."));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCombos();
+    void Promise.resolve().then(fetchCombos);
+    // Load again only when the authentication token changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleDelete = async (id: number, name: string) => {
@@ -71,8 +74,8 @@ export default function AdminCombosPage() {
       setSuccessMsg(`Đã xóa combo "${name}" thành công.`);
       setTimeout(() => setSuccessMsg(null), 3000);
       setCombos(combos.filter((c) => c.id !== id));
-    } catch (err: any) {
-      setErrorMsg(err.message || "Xóa thất bại.");
+    } catch (err: unknown) {
+      setErrorMsg(getErrorMessage(err, "Xóa thất bại."));
       setTimeout(() => setErrorMsg(null), 4000);
     }
   };
@@ -110,7 +113,7 @@ export default function AdminCombosPage() {
           </div>
           <Link
             href="/admin/combos/new"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs uppercase tracking-widest px-5 py-3 rounded-xl shadow-lg shadow-orange-500/15 transition-all self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-navy-950 font-extrabold text-xs uppercase tracking-widest px-5 py-3 rounded-xl shadow-lg shadow-orange-500/15 transition-all self-start sm:self-auto cursor-pointer"
           >
             <span className="material-symbols-outlined text-lg select-none">add</span>
             Thêm combo mới
@@ -170,10 +173,12 @@ export default function AdminCombosPage() {
                   {filteredCombos.map((combo) => (
                     <tr key={combo.id} className="hover:bg-navy-850/40 transition-colors">
                       <td className="py-4 px-6 vertical-align-middle">
-                        <img
+                        <Image
                           src={combo.image}
                           alt={combo.name}
                           className="w-14 h-14 object-cover rounded-lg border border-navy-800 bg-navy-950"
+                          width={56}
+                          height={56}
                         />
                       </td>
                       <td className="py-4 px-6 vertical-align-middle">

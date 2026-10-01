@@ -123,3 +123,20 @@ input::-webkit-credentials-auto-fill-button {
   opacity: 1;
   transform: rotate(-45deg) translateY(100%);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-ping,
+  .animate-marquee-ltr,
+  .animate-float-up,
+  .animate-cart-bounce {
+    animation: none !important;
+  }
+
+  .holographic-card::before,
+  .holographic-card:hover::before {
+    opacity: 0 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

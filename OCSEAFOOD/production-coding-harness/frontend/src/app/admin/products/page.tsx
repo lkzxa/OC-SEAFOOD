@@ -6,9 +6,13 @@ import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
 import ImageUploader from "@/components/admin/ImageUploader";
 import { useAuthStore } from "@/store/useAuthStore";
 import dynamic from "next/dynamic";
+import type ReactQuillInstance from "react-quill-new";
+import type { ComponentProps, ComponentType, RefAttributes } from "react";
 
-// Cast to any to allow ref forwarding (react-quill-new types don't expose ref in dynamic())
-const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false }) as any;
+type ReactQuillProps = ComponentProps<typeof ReactQuillInstance>;
+const ReactQuill = dynamic<ReactQuillProps>(() => import("react-quill-new"), { ssr: false }) as ComponentType<
+  ReactQuillProps & RefAttributes<ReactQuillInstance>
+>;
 import "react-quill-new/dist/quill.snow.css";
 
 interface Category {
@@ -78,7 +82,7 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [optionRows, setOptionRows] = useState<{ name: string; price: string }[]>([]);
-  const quillRef = useRef<any>(null);
+  const quillRef = useRef<ReactQuillInstance | null>(null);
 
   const modules = useMemo(() => {
     return {
@@ -131,11 +135,6 @@ export default function AdminProductsPage() {
     };
   }, []);
 
-  const editingProduct = useMemo(
-    () => products.find((product) => product.id === editingId) || null,
-    [editingId, products]
-  );
-
   const loadData = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -164,36 +163,31 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void Promise.resolve().then(loadData);
   }, []);
 
-  useEffect(() => {
-    if (!editingProduct) {
-      setOptionRows([]);
-      return;
-    }
-
+  const startEditing = (product: Product) => {
+    setEditingId(product.id);
     setForm({
-      name: editingProduct.name,
-      slug: editingProduct.slug,
-      description: editingProduct.description,
-      image: editingProduct.image,
-      unit: editingProduct.unit,
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      image: product.image,
+      unit: product.unit,
       priceReference:
-        editingProduct.priceReference === null ? "" : String(editingProduct.priceReference),
-      showContact: editingProduct.showContact,
-      isVisible: editingProduct.isVisible,
-      categoryIds: editingProduct.categoryIds || (editingProduct.categoryId ? [editingProduct.categoryId] : []),
+        product.priceReference === null ? "" : String(product.priceReference),
+      showContact: product.showContact,
+      isVisible: product.isVisible,
+      categoryIds: product.categoryIds || (product.categoryId ? [product.categoryId] : []),
       weightOptionsStr: "",
-      detailDescription: editingProduct.detailDescription || "",
-      cookingSuggestion: editingProduct.cookingSuggestion || "",
-      storageInstruction: editingProduct.storageInstruction || "",
-      badgeText: editingProduct.badgeText || "",
+      detailDescription: product.detailDescription || "",
+      cookingSuggestion: product.cookingSuggestion || "",
+      storageInstruction: product.storageInstruction || "",
+      badgeText: product.badgeText || "",
     });
 
-    if (editingProduct.weightOptions && editingProduct.weightOptions.length > 0) {
-      const rows = editingProduct.weightOptions.map((opt) => {
+    if (product.weightOptions && product.weightOptions.length > 0) {
+      const rows = product.weightOptions.map((opt) => {
         const parts = opt.split(":");
         const priceVal = parts[parts.length - 1];
         const hasPrice = parts.length > 1 && !isNaN(Number(priceVal));
@@ -206,7 +200,9 @@ export default function AdminProductsPage() {
     } else {
       setOptionRows([]);
     }
-  }, [editingProduct]);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -607,7 +603,7 @@ export default function AdminProductsPage() {
             <button
               type="submit"
               disabled={saving || loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
+              className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
             >
               {saving ? "Đang lưu..." : editingId ? "Cập nhật sản phẩm" : "Tạo sản phẩm"}
             </button>
@@ -704,11 +700,7 @@ export default function AdminProductsPage() {
                       <td className="py-3 px-4 text-right space-x-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingId(product.id);
-                            setErrorMsg(null);
-                            setSuccessMsg(null);
-                          }}
+                          onClick={() => startEditing(product)}
                           className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer"
                         >
                           Sửa

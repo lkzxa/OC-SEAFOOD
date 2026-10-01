@@ -15,7 +15,9 @@ const mockPosts = [
     slug: "cach-luoc-cua-bien-ngon",
     content:
       "Cách luộc cua biển ngon giữ trọn vẹn vị ngọt nước tự nhiên, cua chắc thịt không bị rụng càng khi hấp.",
+    excerpt: "Mô tả ngắn đã được biên tập cho thẻ bài viết.",
     image: "/cua.jpg",
+    imageAlt: "Cua biển chín trên đĩa",
     isVisible: true,
     authorId: 1,
     createdAt: "2026-06-10T12:00:00.000Z",
@@ -66,6 +68,12 @@ describe("Blog Pages", () => {
           json: () => Promise.resolve(mockPosts[0]),
         });
       }
+      if (url.includes("/posts/cach-luoc-cua-bien-ngon")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockPosts[0]),
+        });
+      }
       if (url.includes("/posts/3")) {
         return Promise.resolve({
           ok: true,
@@ -99,6 +107,7 @@ describe("Blog Pages", () => {
     // Check visible posts titles
     expect(screen.getByText("Cách luộc cua biển ngon")).not.toBeNull();
     expect(screen.getByText("Bí quyết làm Sashimi Cá hồi")).not.toBeNull();
+    expect(screen.getByText("Mô tả ngắn đã được biên tập cho thẻ bài viết.")).not.toBeNull();
 
     // Check invisible post is filtered out
     expect(screen.queryByText("Bài viết nhạy cảm")).toBeNull();
@@ -106,7 +115,21 @@ describe("Blog Pages", () => {
     // Check fallback image is loaded for null image
     const images = screen.getAllByRole("img");
     expect(images.length).toBe(2);
-    expect(images[1].getAttribute("src")).toContain("unsplash.com");
+    expect(images[0].getAttribute("alt")).toBe("Cua biển chín trên đĩa");
+    expect(images[1].getAttribute("src")).toBe("/media-placeholder.svg");
+    expect(screen.getByRole("link", { name: "Cách luộc cua biển ngon" }).getAttribute("href")).toBe(
+      "/blog/cach-luoc-cua-bien-ngon"
+    );
+  });
+
+  it("should render a blog post through its stable slug", async () => {
+    const detailComponent = await BlogPostDetailPage({
+      params: Promise.resolve({ id: "cach-luoc-cua-bien-ngon" }),
+    });
+    render(detailComponent);
+
+    expect(screen.getByText("Cách luộc cua biển ngon")).not.toBeNull();
+    expect(notFound).not.toHaveBeenCalled();
   });
 
   it("should render blog post detail content and meta info", async () => {

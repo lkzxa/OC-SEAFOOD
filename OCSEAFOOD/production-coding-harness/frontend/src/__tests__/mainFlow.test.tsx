@@ -199,10 +199,11 @@ describe("Main customer-to-admin flow", () => {
     // Scope to CartPage's own container — MenuPage from earlier in this test
     // is still mounted (no unmount between renders) and now also has a
     // combobox (price sort dropdown), so an unscoped screen query would pick it up.
-    const selects = within(cartContainer).getAllByRole("combobox");
-    fireEvent.change(selects[0], { target: { value: "HCM" } });
-    fireEvent.change(selects[1], { target: { value: "District 1" } });
-    fireEvent.change(selects[2], { target: { value: "Ben Nghe" } });
+    const addressInputs = within(cartContainer).getAllByRole("combobox") as HTMLInputElement[];
+    fireEvent.change(addressInputs[0], { target: { value: "hồ" } });
+    fireEvent.click(within(cartContainer).getByRole("option", { name: "Thành phố Hồ Chí Minh" }));
+    fireEvent.change(addressInputs[1], { target: { value: "sài" } });
+    fireEvent.click(within(cartContainer).getByRole("option", { name: "Phường Sài Gòn" }));
     fireEvent.change(screen.getByPlaceholderText("Số 12, Ngõ 345, Đường Lê Lợi"), {
       target: { value: "10 Lê Lợi" },
     });

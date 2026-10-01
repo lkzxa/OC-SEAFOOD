@@ -1,59 +1,59 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface UserProfile {
   id: number;
   email: string;
   name: string;
-  role: 'CUSTOMER' | 'ADMIN';
+  role: "CUSTOMER" | "ADMIN";
 }
 
 interface AuthState {
   token: string | null;
   user: UserProfile | null;
-  setAuth: (token: string, user: UserProfile, cookieDays?: number) => void;
+  sessionReady: boolean;
+  setAuth: (token: string | null, user: UserProfile) => void;
+  beginSessionCheck: () => void;
+  finishSessionCheck: () => void;
   clearAuth: () => void;
+  logout: () => Promise<void>;
 }
-
-// Utility to set a cookie on the client side
-// cookieDays = 0 → session cookie (no expires), > 0 → persistent cookie
-// BUG-H03 fix: Only set Secure flag on HTTPS (not localhost)
-const setCookie = (name: string, value: string, days = 7) => {
-  if (typeof window === 'undefined') return;
-  const isSecure = window.location.protocol === 'https:';
-  let cookie = `${name}=${encodeURIComponent(value)}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`;
-  if (days > 0) {
-    const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    cookie += `; expires=${expires}`;
-  }
-  document.cookie = cookie;
-};
-
-// Utility to delete a cookie on the client side
-const deleteCookie = (name: string) => {
-  if (typeof window === 'undefined') return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax; Secure`;
-};
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
+      // Bearer tokens remain an in-memory compatibility seam for tests and
+      // non-browser clients. Browser login responses use the HttpOnly cookie.
       token: null,
       user: null,
+      sessionReady: false,
 
-      setAuth: (token, user, cookieDays = 7) => {
-        setCookie('token', token, cookieDays);
-        set({ token, user });
+      setAuth: (token, user) => set({ token, user, sessionReady: true }),
+      beginSessionCheck: () => set({ sessionReady: false }),
+      finishSessionCheck: () => set({ sessionReady: true }),
+      clearAuth: () => set({ token: null, user: null, sessionReady: true }),
+      logout: async () => {
+        try {
+          await fetch("/api/auth/logout", { method: "POST" });
+        } finally {
+          set({ token: null, user: null, sessionReady: true });
+        }
       },
-
-      clearAuth: () => {
-        deleteCookie('token');
-        set({ token: null, user: null });
-      }
     }),
     {
-      name: 'ocseafood-auth',
-      partialize: (state) => ({ token: state.token, user: state.user })
+      name: "ocseafood-auth",
+      version: 2,
+      // The server session cookie is HttpOnly. Persist only display identity;
+      // AuthSessionProvider validates it with the server on every page load.
+      partialize: (state) => ({ user: state.user }),
+      migrate: (persistedState) => {
+        const previous = persistedState as { user?: UserProfile | null } | undefined;
+        return {
+          token: null,
+          user: previous?.user ?? null,
+          sessionReady: false,
+        };
+      },
     }
   )
 );

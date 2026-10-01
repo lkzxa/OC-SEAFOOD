@@ -1,0 +1,129 @@
+{
+  "task": "TASK-0052",
+  "status": "draft",
+  "createdAt": "2026-09-11",
+  "language": "vi-VN",
+  "sourceBrief": "docs/editorial-seo-brief.md",
+  "publicationPolicy": "Do not publish or insert into PostgreSQL before TASK-0053 editorial, business, and image QA.",
+  "liveBaseline": {
+    "existingPostCount": 2,
+    "productCount": 28,
+    "categoryCount": 5,
+    "comboCount": 6
+  },
+  "articles": [
+    {
+      "order": 5,
+      "file": "content/drafts/05-cach-so-che-oc-sach-khong-tanh.md",
+      "title": "Cách sơ chế ốc và hải sản có vỏ sạch, không tanh",
+      "slug": "cach-so-che-oc-sach-khong-tanh",
+      "primaryKeyword": "cách sơ chế ốc sạch không tanh",
+      "searchIntent": "Hướng dẫn làm sạch trước khi nấu",
+      "wordCount": 1495,
+      "excerptLength": 103,
+      "metaTitle": "Cách sơ chế ốc sạch, giảm mùi tanh | OCSEAFOOD",
+      "metaTitleLength": 46,
+      "metaDescription": "Quy trình phân loại, chà vỏ và sơ chế ốc, sò điệp cùng hải sản có vỏ, kèm lưu ý tránh lây nhiễm chéo và dấu hiệu cần loại bỏ.",
+      "metaDescriptionLength": 125,
+      "imageAlt": "Ốc và sò được phân loại trong khay sạch trước khi sơ chế",
+      "cta": "Xem danh mục Sò - Ốc và xác nhận cách sơ chế riêng.",
+      "internalLinks": [
+        "/category/so-oc",
+        "/product/oc-bulot-sofima",
+        "/product/oc-voi-voi-nga",
+        "/product/so-diep-song"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.foodsafety.gov/blog/safe-selection-and-handling-fish-and-shellfish",
+        "https://www.foodsafety.gov/food-poisoning/bacteria-and-viruses"
+      ],
+      "businessReviewRequired": true
+    },
+    {
+      "order": 6,
+      "file": "content/drafts/06-cach-nau-lau-hai-san-tai-nha.md",
+      "title": "Công thức lẩu hải sản tại nhà và cách cân đối nguyên liệu",
+      "slug": "cach-nau-lau-hai-san-tai-nha",
+      "primaryKeyword": "cách nấu lẩu hải sản tại nhà",
+      "searchIntent": "Công thức và chuẩn bị bữa ăn gia đình",
+      "wordCount": 1580,
+      "excerptLength": 90,
+      "metaTitle": "Cách nấu lẩu hải sản tại nhà | OCSEAFOOD",
+      "metaTitleLength": 40,
+      "metaDescription": "Công thức lẩu hải sản cho bữa gia đình, từ cân đối nước dùng và nguyên liệu đến thứ tự nhúng, kiểm tra độ chín và bảo quản món thừa.",
+      "metaDescriptionLength": 132,
+      "imageAlt": "Nồi lẩu hải sản sôi nhẹ với các đĩa nguyên liệu được chia riêng",
+      "cta": "Xem set lẩu hoặc chọn nguyên liệu và xác nhận lượng thực tế.",
+      "internalLinks": [
+        "/combo/set-lau-hai-san-dai-duong",
+        "/product/tom-su",
+        "/product/ca-hoi",
+        "/menu"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling",
+        "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures"
+      ],
+      "businessReviewRequired": true
+    },
+    {
+      "order": 7,
+      "file": "content/drafts/07-cach-che-bien-tom-hum-alaska.md",
+      "title": "Cách chế biến tôm hùm Alaska cho bữa tiệc gia đình",
+      "slug": "cach-che-bien-tom-hum-alaska",
+      "primaryKeyword": "cách chế biến tôm hùm Alaska",
+      "searchIntent": "Công thức theo sản phẩm cho bữa tiệc gia đình",
+      "wordCount": 1587,
+      "excerptLength": 97,
+      "metaTitle": "Cách chế biến Tôm Hùm Alaska | OCSEAFOOD",
+      "metaTitleLength": 40,
+      "metaDescription": "Hướng dẫn chuẩn bị, hấp và nướng tôm hùm Alaska tại nhà, kèm cách kiểm tra thịt chín, sắp xếp bữa tiệc và tránh lây nhiễm chéo.",
+      "metaDescriptionLength": 127,
+      "imageAlt": "Tôm hùm Alaska nguyên con và phần thịt chín trắng đục trên bàn tiệc",
+      "cta": "Xem Tôm Hùm Alaska và xác nhận trạng thái, khối lượng từng con.",
+      "internalLinks": [
+        "/product/tom-hum-alaska",
+        "/category/tom",
+        "/menu"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://seagrant.umaine.edu/maine-seafood-guide/lobster/",
+        "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures"
+      ],
+      "businessReviewRequired": true
+    },
+    {
+      "order": 8,
+      "file": "content/drafts/08-cach-chon-combo-hai-san-theo-so-nguoi.md",
+      "title": "Cách chọn combo hải sản theo số người và loại buổi tiệc",
+      "slug": "cach-chon-combo-hai-san-theo-so-nguoi",
+      "primaryKeyword": "cách chọn combo hải sản theo số người",
+      "searchIntent": "So sánh và quyết định mua combo",
+      "wordCount": 1710,
+      "excerptLength": 116,
+      "metaTitle": "Cách chọn combo hải sản theo số người | OCSEAFOOD",
+      "metaTitleLength": 49,
+      "metaDescription": "Khung chọn combo hải sản theo số khách, kiểu tiệc, thiết bị và món ăn kèm, với checklist xác nhận khẩu phần, dị ứng, giá và tình trạng hàng.",
+      "metaDescriptionLength": 140,
+      "imageAlt": "Bàn tiệc hải sản gia đình với số ghế và món ăn được bố trí rõ",
+      "cta": "Gửi checklist bữa tiệc và chỉ chốt khi mọi dữ liệu đã xác nhận.",
+      "internalLinks": [
+        "/combo",
+        "/combo/set-lau-hai-san-dai-duong",
+        "/combo/combo-nuong-bbq-special",
+        "/combo/set-sashimi-thuong-hang",
+        "/combo/combo-cua-ca-mau-sot"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling",
+        "https://www.foodsafety.gov/people-at-risk"
+      ],
+      "businessReviewRequired": true,
+      "publicationBlocker": "OCSEAFOOD operations must confirm serving sizes, current components, prices, stock, and allergen information."
+    }
+  ]
+}

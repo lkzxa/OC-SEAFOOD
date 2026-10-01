@@ -163,7 +163,7 @@ export default function ImageUploader({ value, onChange, disabled, placeholder =
                 src={url} 
                 alt={`Preview ${idx + 1}`} 
                 className="w-full h-full object-cover" 
-                onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=200"; }} 
+                onError={(e) => { e.currentTarget.src = "/media-placeholder.svg"; }}
               />
               <button
                 type="button"

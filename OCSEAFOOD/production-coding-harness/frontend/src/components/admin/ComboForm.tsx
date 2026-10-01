@@ -1,57 +1,50 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ImageUploader from "./ImageUploader";
 import Link from "next/link";
 
+export interface ComboFormData {
+  name: string;
+  slug: string;
+  description: string;
+  originalPrice: number | null;
+  price: number | null;
+  showContact: boolean;
+  image: string;
+  tag: string | null;
+  discountBadge: string | null;
+  items: string[];
+  isVisible: boolean;
+}
+
 interface ComboFormProps {
-  initialData?: {
-    name: string;
-    slug: string;
-    description: string;
+  initialData?: Omit<ComboFormData, "originalPrice" | "price" | "showContact" | "tag" | "discountBadge"> & {
     originalPrice?: number | null;
     price?: number | null;
     showContact?: boolean;
-    image: string;
     tag?: string | null;
     discountBadge?: string | null;
-    items: string[];
-    isVisible: boolean;
   };
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: ComboFormData) => Promise<void>;
   saving: boolean;
   errorMsg: string | null;
 }
 
 export default function ComboForm({ initialData, onSubmit, saving, errorMsg }: ComboFormProps) {
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [showContact, setShowContact] = useState(false);
-  const [image, setImage] = useState("");
-  const [tag, setTag] = useState("");
-  const [discountBadge, setDiscountBadge] = useState("");
-  const [itemsList, setItemsList] = useState<string[]>([""]);
-  const [isVisible, setIsVisible] = useState(true);
-
-  // Populate data when editing
-  useEffect(() => {
-    if (initialData) {
-      setName(initialData.name || "");
-      setSlug(initialData.slug || "");
-      setDescription(initialData.description || "");
-      setPrice(initialData.price ? initialData.price.toString() : "");
-      setOriginalPrice(initialData.originalPrice ? initialData.originalPrice.toString() : "");
-      setShowContact(initialData.showContact || false);
-      setImage(initialData.image || "");
-      setTag(initialData.tag || "");
-      setDiscountBadge(initialData.discountBadge || "");
-      setItemsList(initialData.items && initialData.items.length > 0 ? initialData.items : [""]);
-      setIsVisible(initialData.isVisible !== false);
-    }
-  }, [initialData]);
+  const [name, setName] = useState(() => initialData?.name || "");
+  const [slug, setSlug] = useState(() => initialData?.slug || "");
+  const [description, setDescription] = useState(() => initialData?.description || "");
+  const [price, setPrice] = useState(() => initialData?.price ? initialData.price.toString() : "");
+  const [originalPrice, setOriginalPrice] = useState(() => initialData?.originalPrice ? initialData.originalPrice.toString() : "");
+  const [showContact, setShowContact] = useState(() => initialData?.showContact || false);
+  const [image, setImage] = useState(() => initialData?.image || "");
+  const [tag, setTag] = useState(() => initialData?.tag || "");
+  const [discountBadge, setDiscountBadge] = useState(() => initialData?.discountBadge || "");
+  const [itemsList, setItemsList] = useState<string[]>(() =>
+    initialData?.items?.length ? initialData.items : [""]
+  );
+  const [isVisible, setIsVisible] = useState(() => initialData?.isVisible !== false);
 
   // Helper to generate slug from name
   const generateSlug = () => {
@@ -322,7 +315,7 @@ export default function ComboForm({ initialData, onSubmit, saving, errorMsg }: C
       <div className="flex items-center gap-4">
         <button
           type="submit"
-          className="bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs uppercase tracking-widest px-8 py-3.5 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-55"
+          className="bg-orange-500 hover:bg-orange-400 text-navy-950 font-extrabold text-xs uppercase tracking-widest px-8 py-3.5 rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-55"
           disabled={saving}
         >
           {saving ? (

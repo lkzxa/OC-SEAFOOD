@@ -3,10 +3,10 @@
  * Không đụng gì tới database (chỉ đọc), an toàn để chạy bất cứ lúc nào.
  *
  * Cách dùng:
- *   node scripts/backup-db.js "<DATABASE_URL>" [đường-dẫn-file-output]
+ *   node scripts/backup-db.js [đường-dẫn-file-output]
  *
- * Ví dụ backup database production:
- *   node scripts/backup-db.js "postgresql://user:pass@host/db" ../backups/prod.json
+ * Ví dụ chọn tên file output:
+ *   node scripts/backup-db.js ../backups/prod.json
  *
  * Nếu không truyền đường dẫn output, file sẽ tự lưu vào backend/backups/
  * với tên kèm ngày giờ hiện tại.
@@ -23,16 +23,16 @@ const MODELS = [
 ];
 
 async function main() {
-  const dbUrl = process.argv[2];
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+  const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
-    console.error('Thiếu DATABASE_URL. Cách dùng:');
-    console.error('  node scripts/backup-db.js "<DATABASE_URL>" [đường-dẫn-file-output]');
+    console.error('Thiếu DATABASE_URL trong backend/.env.');
     process.exit(1);
   }
 
   const defaultName = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-  const outPath = process.argv[3]
-    ? path.resolve(process.argv[3])
+  const outPath = process.argv[2]
+    ? path.resolve(process.argv[2])
     : path.join(__dirname, '..', 'backups', defaultName);
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
@@ -42,7 +42,9 @@ async function main() {
 
   try {
     for (const model of MODELS) {
-      const rows = await prisma[model].findMany();
+      const rows = model === 'product'
+        ? await prisma.product.findMany({ include: { categories: { select: { id: true } } } })
+        : await prisma[model].findMany();
       backup.data[model] = rows;
       console.log(`${model}: ${rows.length} dòng`);
     }

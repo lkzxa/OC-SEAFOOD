@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import ProductDetailContent from "../app/product/[slug]/ProductDetailContent";
 import { useCartStore } from "../store/useCartStore";
@@ -112,16 +112,16 @@ describe("Product Detail Page Content", () => {
     render(<ProductDetailContent slug="cua-huynh-de-hoang-gia" />);
     await screen.findByRole("heading", { name: "Cua Huỳnh Đế Hoàng Gia" });
 
-    const quantityInput = screen.getByRole("spinbutton") as HTMLInputElement;
+    const quantityInput = screen.getByRole("spinbutton", { name: "Số lượng" }) as HTMLInputElement;
     expect(quantityInput.value).toBe("1");
 
     // Click plus button
-    const plusBtn = screen.getByLabelText("Increase quantity");
+    const plusBtn = screen.getByLabelText("Tăng số lượng");
     fireEvent.click(plusBtn);
     expect(quantityInput.value).toBe("2");
 
     // Click minus button
-    const minusBtn = screen.getByLabelText("Decrease quantity");
+    const minusBtn = screen.getByLabelText("Giảm số lượng");
     fireEvent.click(minusBtn);
     expect(quantityInput.value).toBe("1");
 
@@ -160,7 +160,7 @@ describe("Product Detail Page Content", () => {
     await screen.findByRole("heading", { name: "Cua Huỳnh Đế Hoàng Gia" });
 
     // Increase quantity first to 3
-    const plusBtn = screen.getByLabelText("Increase quantity");
+    const plusBtn = screen.getByLabelText("Tăng số lượng");
     fireEvent.click(plusBtn);
     fireEvent.click(plusBtn);
 

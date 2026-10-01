@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  OFFICIAL_PHONE_DISPLAY,
+  OFFICIAL_ZALO_URL,
+  toTelephoneHref,
+} from "@/constants/contact";
 
 interface PublicSettings {
   CONTACT_HOTLINE?: string;
@@ -12,9 +17,11 @@ interface PublicSettings {
 export default function FloatingContact() {
   const pathname = usePathname();
   const [settings, setSettings] = useState<PublicSettings | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Hide on admin panel pages
   const isAdminPage = pathname?.startsWith("/admin");
+  const isCheckoutPage = pathname === "/cart";
 
   useEffect(() => {
     if (isAdminPage) return;
@@ -22,10 +29,10 @@ export default function FloatingContact() {
     fetch("/api/settings/public")
       .then((res) => {
         if (!res.ok) {
-          console.warn("Could not fetch public contact settings, using empty defaults.");
+          console.warn("Could not fetch public contact settings, using official defaults.");
           return {
-            CONTACT_HOTLINE: "",
-            CONTACT_ZALO: "",
+            CONTACT_HOTLINE: OFFICIAL_PHONE_DISPLAY,
+            CONTACT_ZALO: OFFICIAL_ZALO_URL,
             CONTACT_FACEBOOK: ""
           };
         }
@@ -68,8 +75,8 @@ export default function FloatingContact() {
     return `https://facebook.com/${trimmed}`;
   };
 
-  return (
-    <div className="fixed right-6 bottom-24 z-50 flex flex-col gap-4 select-none">
+  const contactLinks = (mobile = false) => (
+    <>
       
       {/* Facebook Messenger button */}
       {CONTACT_FACEBOOK && (
@@ -78,7 +85,8 @@ export default function FloatingContact() {
           target="_blank"
           rel="noopener noreferrer"
           title="Facebook Fanpage"
-          className="group relative flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-lg shadow-blue-500/10 transition-all duration-300 hover:scale-110 hover:-translate-x-1 active:scale-95 cursor-pointer"
+          aria-label="Mở Facebook Fanpage"
+          className={`group relative flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-lg shadow-blue-500/10 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer ${mobile ? "" : "hover:-translate-x-1"}`}
         >
           {/* Tooltip */}
           <span className="absolute right-14 scale-0 group-hover:scale-100 transition-all duration-200 origin-right bg-navy-950 border border-navy-700/60 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
@@ -101,7 +109,8 @@ export default function FloatingContact() {
           target="_blank"
           rel="noopener noreferrer"
           title="Chat Zalo"
-          className="group relative flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-lg shadow-blue-400/10 transition-all duration-300 hover:scale-110 hover:-translate-x-1 active:scale-95 cursor-pointer"
+          aria-label="Mở trò chuyện Zalo"
+          className={`group relative flex items-center justify-center w-12 h-12 rounded-full bg-white shadow-lg shadow-blue-400/10 transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer ${mobile ? "" : "hover:-translate-x-1"}`}
         >
           {/* Tooltip */}
           <span className="absolute right-14 scale-0 group-hover:scale-100 transition-all duration-200 origin-right bg-navy-950 border border-navy-700/60 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
@@ -131,9 +140,10 @@ export default function FloatingContact() {
       {/* Hotline phone button */}
       {CONTACT_HOTLINE && (
         <a
-          href={`tel:${CONTACT_HOTLINE.trim()}`}
+          href={toTelephoneHref(CONTACT_HOTLINE)}
           title={`Hotline: ${CONTACT_HOTLINE}`}
-          className="group relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 hover:scale-110 hover:-translate-x-1 active:scale-95 cursor-pointer"
+          aria-label={`Gọi hotline ${CONTACT_HOTLINE}`}
+          className={`group relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer ${mobile ? "" : "hover:-translate-x-1"}`}
         >
           {/* Pulse effect rings */}
           <span className="absolute inset-0 rounded-full bg-emerald-500/40 animate-ping duration-1000"></span>
@@ -153,6 +163,34 @@ export default function FloatingContact() {
         </a>
       )}
 
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      <div className={`fixed right-3 z-50 flex flex-col items-end gap-3 select-none md:right-6 md:bottom-24 ${isCheckoutPage ? "bottom-4" : "bottom-14"}`}>
+        {isOpen && (
+          <div
+            id="contact-options"
+            className="flex flex-col gap-3 rounded-2xl border border-navy-700/70 bg-navy-950/95 p-3 shadow-2xl backdrop-blur"
+          >
+            {contactLinks(true)}
+          </div>
+        )}
+        <button
+          type="button"
+          aria-controls="contact-options"
+          aria-expanded={isOpen}
+          aria-label={isOpen ? "Đóng kênh liên hệ" : "Mở kênh liên hệ"}
+          onClick={() => setIsOpen((open) => !open)}
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-orange-400/70 bg-orange-500 text-navy-950 shadow-xl transition-colors hover:bg-orange-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300"
+        >
+          <span className="material-symbols-outlined select-none text-2xl">
+            {isOpen ? "close" : "support_agent"}
+          </span>
+        </button>
+      </div>
+
+    </>
   );
 }

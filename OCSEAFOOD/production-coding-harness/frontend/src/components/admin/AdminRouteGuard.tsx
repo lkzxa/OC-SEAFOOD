@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useHasMounted } from "@/hooks/useHasMounted";
 
 export default function AdminRouteGuard({
   children,
@@ -10,15 +11,11 @@ export default function AdminRouteGuard({
   children: React.ReactNode;
 }>) {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
+  const { user, sessionReady } = useAuthStore();
+  const mounted = useHasMounted();
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) {
+    if (!mounted || !sessionReady) {
       return;
     }
 
@@ -30,9 +27,9 @@ export default function AdminRouteGuard({
     if (user.role !== "ADMIN") {
       router.push("/");
     }
-  }, [mounted, router, user]);
+  }, [mounted, router, sessionReady, user]);
 
-  if (!mounted || !user) {
+  if (!mounted || !sessionReady || !user) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-slate-400 text-sm font-bold uppercase tracking-widest">
         Đang kiểm tra quyền truy cập...

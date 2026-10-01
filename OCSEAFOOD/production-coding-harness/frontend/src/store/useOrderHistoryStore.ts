@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { OrderStatus } from "@/constants/orderStatus";
 
 export interface OrderHistoryItem {
   productId: number;
@@ -22,7 +23,7 @@ export interface OrderHistoryEntry {
   ward: string;
   streetAddress: string;
   note?: string;
-  status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  status: OrderStatus;
   totalFinal: number;
   totalItems: number;
   items: OrderHistoryItem[];

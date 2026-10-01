@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
-import ComboForm from "@/components/admin/ComboForm";
-import { getAuthHeaders } from "@/components/admin/adminApi";
+import ComboForm, { ComboFormData } from "@/components/admin/ComboForm";
+import { getAuthHeaders, getErrorMessage } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function NewComboPage() {
@@ -13,7 +13,7 @@ export default function NewComboPage() {
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ComboFormData) => {
     setSaving(true);
     setErrorMsg(null);
 
@@ -33,8 +33,8 @@ export default function NewComboPage() {
       }
 
       router.push("/admin/combos");
-    } catch (err: any) {
-      setErrorMsg(err.message || "Tạo mới combo thất bại. Vui lòng kiểm tra lại dữ liệu.");
+    } catch (err: unknown) {
+      setErrorMsg(getErrorMessage(err, "Tạo mới combo thất bại. Vui lòng kiểm tra lại dữ liệu."));
     } finally {
       setSaving(false);
     }

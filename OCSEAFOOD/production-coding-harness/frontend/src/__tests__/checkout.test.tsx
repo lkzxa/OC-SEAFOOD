@@ -82,7 +82,7 @@ describe("Cart and Checkout Page Component", () => {
     expect(emailInput.value).toBe("testcustomer@example.com");
   });
 
-  it("should support 3-tier address select filtering", () => {
+  it("should support current Vietnam province and ward address select filtering", () => {
     useCartStore.getState().addItem(
       {
         id: 1,
@@ -96,27 +96,22 @@ describe("Cart and Checkout Page Component", () => {
 
     render(<CartPage />);
 
-    const selects = screen.getAllByRole("combobox");
-    const provinceSelect = selects[0] as HTMLSelectElement;
-    
-    // District select and ward select should be disabled initially (no options except default)
-    const districtSelect = selects[1] as HTMLSelectElement;
-    const wardSelect = selects[2] as HTMLSelectElement;
+    const inputs = screen.getAllByRole("combobox") as HTMLInputElement[];
+    const provinceInput = inputs[0];
+    const wardInput = inputs[1];
 
-    expect(districtSelect.disabled).toBe(true);
-    expect(wardSelect.disabled).toBe(true);
+    expect(inputs).toHaveLength(2);
+    expect(wardInput.disabled).toBe(true);
 
-    // Select Province "HCM"
-    fireEvent.change(provinceSelect, { target: { value: "HCM" } });
-    expect(districtSelect.disabled).toBe(false);
+    fireEvent.change(provinceInput, { target: { value: "hồ" } });
+    fireEvent.click(screen.getByRole("option", { name: "Thành phố Hồ Chí Minh" }));
 
-    // District select should now contain options for HCM: Quận 1, Quận 3, Quận Bình Thạnh
-    fireEvent.change(districtSelect, { target: { value: "District 1" } });
-    expect(wardSelect.disabled).toBe(false);
+    expect(provinceInput.value).toBe("Thành phố Hồ Chí Minh");
+    expect(wardInput.disabled).toBe(false);
 
-    // Select District "District 1" should populate wards
-    fireEvent.change(wardSelect, { target: { value: "Ben Nghe" } });
-    expect(wardSelect.value).toBe("Ben Nghe");
+    fireEvent.change(wardInput, { target: { value: "sài" } });
+    fireEvent.click(screen.getByRole("option", { name: "Phường Sài Gòn" }));
+    expect(wardInput.value).toBe("Phường Sài Gòn");
   });
 
   it("should show client validation error if phone or email format is invalid", async () => {
@@ -139,11 +134,12 @@ describe("Cart and Checkout Page Component", () => {
     fireEvent.change(screen.getByPlaceholderText("0912345678"), { target: { value: "0912345678" } });
     
     // Select address
-    const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0], { target: { value: "HCM" } });
-    fireEvent.change(selects[1], { target: { value: "District 1" } });
-    fireEvent.change(selects[2], { target: { value: "Ben Nghe" } });
-    fireEvent.change(screen.getByPlaceholderText("Số 12, Ngõ 345, Đường Lê Lợi"), { target: { value: "10 Ben Nghe" } });
+    const addressInputs = screen.getAllByRole("combobox") as HTMLInputElement[];
+    fireEvent.change(addressInputs[0], { target: { value: "hồ" } });
+    fireEvent.click(screen.getByRole("option", { name: "Thành phố Hồ Chí Minh" }));
+    fireEvent.change(addressInputs[1], { target: { value: "sài" } });
+    fireEvent.click(screen.getByRole("option", { name: "Phường Sài Gòn" }));
+    fireEvent.change(screen.getByPlaceholderText("Số 12, Ngõ 345, Đường Lê Lợi"), { target: { value: "10 Nguyễn Huệ" } });
 
     // Click submit
     fireEvent.click(screen.getByRole("button", { name: /XÁC NHẬN ĐẶT HÀNG/i }));
@@ -188,10 +184,10 @@ describe("Cart and Checkout Page Component", () => {
           fullName: "Test User",
           email: "test@example.com",
           phone: "0912345678",
-          province: "HCM",
-          district: "District 1",
-          ward: "Ben Nghe",
-          streetAddress: "10 Ben Nghe",
+          province: "Thành phố Hồ Chí Minh",
+          district: "Đơn vị cấp xã trực thuộc",
+          ward: "Phường Sài Gòn",
+          streetAddress: "10 Nguyễn Huệ",
           totalFinal: 1200000,
         }),
     });
@@ -206,12 +202,13 @@ describe("Cart and Checkout Page Component", () => {
     fireEvent.change(screen.getByPlaceholderText("your@email.com"), { target: { value: "test@example.com" } });
     fireEvent.change(screen.getByPlaceholderText("0912345678"), { target: { value: "0912345678" } });
     
-    const selects = screen.getAllByRole("combobox");
-    fireEvent.change(selects[0], { target: { value: "HCM" } });
-    fireEvent.change(selects[1], { target: { value: "District 1" } });
-    fireEvent.change(selects[2], { target: { value: "Ben Nghe" } });
+    const addressInputs = screen.getAllByRole("combobox") as HTMLInputElement[];
+    fireEvent.change(addressInputs[0], { target: { value: "hồ" } });
+    fireEvent.click(screen.getByRole("option", { name: "Thành phố Hồ Chí Minh" }));
+    fireEvent.change(addressInputs[1], { target: { value: "sài" } });
+    fireEvent.click(screen.getByRole("option", { name: "Phường Sài Gòn" }));
     
-    fireEvent.change(screen.getByPlaceholderText("Số 12, Ngõ 345, Đường Lê Lợi"), { target: { value: "10 Ben Nghe" } });
+    fireEvent.change(screen.getByPlaceholderText("Số 12, Ngõ 345, Đường Lê Lợi"), { target: { value: "10 Nguyễn Huệ" } });
 
     // Submit
     fireEvent.click(screen.getByRole("button", { name: /XÁC NHẬN ĐẶT HÀNG/i }));
@@ -238,10 +235,10 @@ describe("Cart and Checkout Page Component", () => {
         fullName: "Test User",
         email: "test@example.com",
         phone: "0912345678",
-        province: "TP. Hồ Chí Minh",
-        district: "Quận 1",
-        ward: "Phường Bến Nghé",
-        streetAddress: "10 Ben Nghe",
+        province: "Thành phố Hồ Chí Minh",
+        district: "Đơn vị cấp xã trực thuộc",
+        ward: "Phường Sài Gòn",
+        streetAddress: "10 Nguyễn Huệ",
         items: [{ productId: 2, quantity: 1 }],
       })
     );
@@ -250,7 +247,7 @@ describe("Cart and Checkout Page Component", () => {
     expect(screen.getByText(/1\.200\.000/)).not.toBeNull();
     expect(screen.getByText(/Test User/)).not.toBeNull();
     expect(screen.getByText(/0912345678/)).not.toBeNull();
-    expect(screen.getByText(/10 Ben Nghe, Phường Bến Nghé, Quận 1, TP\. Hồ Chí Minh/)).not.toBeNull();
+    expect(screen.getByText(/10 Nguyễn Huệ, Phường Sài Gòn, Thành phố Hồ Chí Minh/)).not.toBeNull();
 
     // Cart store should have been cleared
     expect(useCartStore.getState().items.length).toBe(0);

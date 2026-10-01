@@ -37,9 +37,22 @@ describe('Orders Management API - /orders', () => {
   });
 
   describe('GET /orders (List)', () => {
-    it('should block Guest and Customer requests', async () => {
+    it('should block Guest requests and return only the Customer own orders', async () => {
       await request(app).get('/orders').expect(401);
-      await request(app).get('/orders').set('Authorization', `Bearer ${customerToken1}`).expect(403);
+
+      prisma.order.findMany.mockResolvedValue([{ id: 11, userId: 5, orderItems: [] }]);
+      prisma.order.count.mockResolvedValue(1);
+
+      const res = await request(app)
+        .get('/orders?email=someone-else@example.com')
+        .set('Authorization', `Bearer ${customerToken1}`)
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(1);
+      expect(prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { userId: 5 },
+      }));
+      expect(prisma.order.count).toHaveBeenCalledWith({ where: { userId: 5 } });
     });
 
     it('should return paginated list of orders for Admin', async () => {
@@ -53,6 +66,16 @@ describe('Orders Management API - /orders', () => {
 
       expect(res.body.pagination.page).toBe(2);
       expect(res.body.pagination.pageSize).toBe(5);
+    });
+
+    it('should reject a status outside the persisted order contract', async () => {
+      const res = await request(app)
+        .get('/orders?status=SHIPPING')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+
+      expect(res.body.error.message).toBe('Invalid order status');
+      expect(prisma.order.findMany).not.toHaveBeenCalled();
     });
   });
 
@@ -99,6 +122,16 @@ describe('Orders Management API - /orders', () => {
         .set('Authorization', `Bearer ${customerToken1}`)
         .send({ status: 'CONFIRMED' })
         .expect(403);
+    });
+
+    it('should reject a status outside the persisted order contract', async () => {
+      await request(app)
+        .put('/orders/1')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'SHIPPING' })
+        .expect(400);
+
+      expect(prisma.order.findUnique).not.toHaveBeenCalled();
     });
 
     it('should update status and note, and keep adminPriceAdjusted as false', async () => {

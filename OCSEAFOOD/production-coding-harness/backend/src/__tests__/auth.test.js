@@ -47,4 +47,24 @@ describe('JWT Authentication Middleware', () => {
     expect(res.body.user.email).toBe(userPayload.email);
     expect(res.body.user.role).toBe(userPayload.role);
   });
+
+  it('should allow a request authenticated by the HttpOnly session cookie', async () => {
+    const token = signToken({ id: 2, email: 'cookie@example.com', role: 'CUSTOMER' });
+
+    const res = await request(app)
+      .get('/test-auth')
+      .set('Cookie', `ocseafood_session=${token}`)
+      .expect(200);
+
+    expect(res.body.user.email).toBe('cookie@example.com');
+  });
+
+  it('should reject an expired session cookie', async () => {
+    const token = signToken({ id: 2, email: 'expired@example.com', role: 'CUSTOMER' }, '-1s');
+
+    await request(app)
+      .get('/test-auth')
+      .set('Cookie', `ocseafood_session=${token}`)
+      .expect(401);
+  });
 });

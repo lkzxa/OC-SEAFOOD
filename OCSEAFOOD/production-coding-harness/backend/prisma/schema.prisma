@@ -83,6 +83,7 @@ model BlogPost {
   title     String
   slug      String   @unique
   content         String
+  excerpt         String?
   image           String?
   isVisible       Boolean  @default(true)
   metaTitle       String?

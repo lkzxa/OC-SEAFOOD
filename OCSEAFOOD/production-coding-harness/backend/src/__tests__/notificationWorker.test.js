@@ -1,8 +1,9 @@
 const nodemailer = require('nodemailer');
 const https = require('https');
+const dns = require('dns');
 const prisma = require('../config/prisma');
 const env = require('../config/env');
-const { processOutbox } = require('../workers/notificationWorker');
+const { processOutbox, runTick, stopNotificationWorker } = require('../workers/notificationWorker');
 
 jest.mock('../config/prisma', () => ({
   notificationOutbox: {
@@ -17,6 +18,11 @@ jest.mock('../config/prisma', () => ({
 
 jest.mock('nodemailer');
 jest.mock('https');
+jest.mock('dns', () => ({
+  promises: {
+    resolve4: jest.fn()
+  }
+}));
 
 describe('Notification Outbox Worker', () => {
   let mockSendMail;
@@ -36,6 +42,8 @@ describe('Notification Outbox Worker', () => {
     env.EMAIL_TO_ADMIN = 'admin@test.com';
     env.TELEGRAM_BOT_TOKEN = 'bot-token-123';
     env.TELEGRAM_CHAT_ID = 'chat-id-456';
+    env.RECRUITMENT_TELEGRAM_BOT_TOKEN = 'recruitment-bot-token';
+    env.RECRUITMENT_TELEGRAM_CHAT_ID = 'recruitment-chat-id';
     env.ZALO_OA_ACCESS_TOKEN = 'zalo-oa-token-123';
     env.ZALO_USER_ID = 'zalo-user-456';
     env.MAX_NOTIFICATION_RETRIES = 5;
@@ -50,6 +58,7 @@ describe('Notification Outbox Worker', () => {
     nodemailer.createTransport.mockReturnValue({
       sendMail: mockSendMail
     });
+    dns.promises.resolve4.mockResolvedValue(['203.0.113.10']);
 
     // HTTPS request mock setup for Telegram
     errorListeners = {};
@@ -115,6 +124,13 @@ describe('Notification Outbox Worker', () => {
         to: 'admin@test.com',
         subject: expect.stringContaining('ORD-123'),
         html: expect.stringContaining('Jane Doe')
+      })
+    );
+    expect(dns.promises.resolve4).toHaveBeenCalledWith('smtp.test.com');
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: '203.0.113.10',
+        tls: { servername: 'smtp.test.com' }
       })
     );
 
@@ -315,5 +331,47 @@ describe('Notification Outbox Worker', () => {
         error: null
       }
     });
+  });
+
+  it('should use recruitment Telegram environment fallback for recruitment records', async () => {
+    prisma.notificationOutbox.findMany.mockResolvedValue([{
+      id: 21,
+      type: 'TELEGRAM',
+      payload: {
+        isRecruitment: true,
+        message: 'New recruitment application',
+      },
+      status: 'PENDING',
+      retries: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }]);
+
+    await processOutbox();
+
+    expect(https.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hostname: 'api.telegram.org',
+        path: '/botrecruitment-bot-token/sendMessage',
+        method: 'POST',
+      }),
+      expect.any(Function)
+    );
+  });
+
+  it('waits for an active worker tick during shutdown', async () => {
+    let releaseQuery;
+    const pendingQuery = new Promise((resolve) => { releaseQuery = resolve; });
+    prisma.notificationOutbox.findMany.mockReturnValue(pendingQuery);
+
+    const tick = runTick();
+    let stopped = false;
+    const stopping = stopNotificationWorker().then(() => { stopped = true; });
+    await Promise.resolve();
+    expect(stopped).toBe(false);
+
+    releaseQuery([]);
+    await Promise.all([tick, stopping]);
+    expect(stopped).toBe(true);
   });
 });

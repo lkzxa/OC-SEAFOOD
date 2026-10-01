@@ -1,4 +1,5 @@
 const request = require('supertest');
+const path = require('path');
 
 describe('Centralized Error Handler', () => {
   beforeEach(() => {
@@ -22,7 +23,11 @@ describe('Centralized Error Handler', () => {
   it('should return formatted JSON error without stack trace in production mode', async () => {
     const env = require('../config/env');
     const originalNodeEnv = env.NODE_ENV;
+    const originalMediaRoot = env.MEDIA_ROOT;
+    const originalCorsOrigin = env.CORS_ORIGIN;
     env.NODE_ENV = 'production';
+    env.MEDIA_ROOT = path.resolve(__dirname, '../../uploads');
+    env.CORS_ORIGIN = 'https://ocseafood.test';
 
     const app = require('../app');
     const res = await request(app)
@@ -37,5 +42,49 @@ describe('Centralized Error Handler', () => {
 
     // Clean up
     env.NODE_ENV = originalNodeEnv;
+    env.MEDIA_ROOT = originalMediaRoot;
+    env.CORS_ORIGIN = originalCorsOrigin;
+  });
+
+  it('should return JSON for an unmatched route', async () => {
+    const app = require('../app');
+    const res = await request(app)
+      .get('/route-that-does-not-exist')
+      .expect('Content-Type', /json/)
+      .expect(404);
+
+    expect(res.body).toEqual({
+      error: {
+        message: 'Resource not found',
+        status: 404
+      }
+    });
+  });
+
+  it('should sanitize a production 404 raised by static media', async () => {
+    const env = require('../config/env');
+    const originalNodeEnv = env.NODE_ENV;
+    const originalMediaRoot = env.MEDIA_ROOT;
+    const originalCorsOrigin = env.CORS_ORIGIN;
+    env.NODE_ENV = 'production';
+    env.MEDIA_ROOT = path.resolve(__dirname, '../../uploads');
+    env.CORS_ORIGIN = 'https://ocseafood.test';
+
+    const app = require('../app');
+    const res = await request(app)
+      .get('/uploads/missing-task-0057-image.png')
+      .expect('Content-Type', /json/)
+      .expect(404);
+
+    expect(res.body.error).toEqual({
+      message: 'Resource not found',
+      status: 404
+    });
+    expect(JSON.stringify(res.body)).not.toMatch(/[A-Za-z]:\\\\/);
+    expect(res.body.error.stack).toBeUndefined();
+
+    env.NODE_ENV = originalNodeEnv;
+    env.MEDIA_ROOT = originalMediaRoot;
+    env.CORS_ORIGIN = originalCorsOrigin;
   });
 });

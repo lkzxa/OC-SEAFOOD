@@ -1,14 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useCartStore, CartItem } from '@/store/useCartStore';
+import { useHasMounted } from '@/hooks/useHasMounted';
 
 export function useCart() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHasMounted();
   const store = useCartStore();
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
 
   return {
     items: mounted ? store.items : [],

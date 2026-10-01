@@ -9,18 +9,21 @@
   "scripts": {
     "predev": "powershell -Command \"$p5000 = Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue; if ($p5000) { Stop-Process -Id $p5000.OwningProcess -Force -ErrorAction SilentlyContinue }; $p3000 = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue; if ($p3000) { Stop-Process -Id $p3000.OwningProcess -Force -ErrorAction SilentlyContinue }; Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*production-coding-harness*' } | Stop-Process -Force -ErrorAction SilentlyContinue\"",
     "dev": "concurrently \"npm run dev --workspace=frontend\" \"npm run dev --workspace=backend\"",
+    "test": "npm run test --workspace=backend && npm run test --workspace=frontend",
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "test:frontend": "npm run test --workspace=frontend",
     "test:backend": "npm run test --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=backend"
+    "build:backend": "npm run build --workspace=backend",
+    "media:inventory": "npm run media:inventory --workspace=backend",
+    "media:inventory:strict": "npm run media:inventory:strict --workspace=backend",
+    "media:backup": "npm run media:backup --workspace=backend",
+    "media:verify-backup": "npm run media:verify-backup --workspace=backend"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",
     "concurrently": "^10.0.3"
-  },
-  "dependencies": {
-    "multer": "^2.2.0",
-    "react-quill": "^2.0.0"
   },
   "overrides": {
     "react": "19.2.4",

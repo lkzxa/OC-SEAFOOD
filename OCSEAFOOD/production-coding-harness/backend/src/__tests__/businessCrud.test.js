@@ -25,6 +25,7 @@ jest.mock('../config/prisma', () => ({
   blogPost: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -165,6 +166,31 @@ describe('Business CRUD API - Categories, Products, BlogPosts', () => {
   });
 
   describe('BlogPosts Endpoints', () => {
+    it.each([
+      ['15', { id: 15 }],
+      ['cach-bao-quan-hai-san', { slug: 'cach-bao-quan-hai-san' }],
+    ])('GET /posts/%s should resolve a visible post by ID or slug', async (identifier, identity) => {
+      const mockPost = { id: 15, slug: 'cach-bao-quan-hai-san', isVisible: true };
+      prisma.blogPost.findFirst.mockResolvedValue(mockPost);
+
+      const res = await request(app)
+        .get(`/posts/${identifier}`)
+        .expect(200);
+
+      expect(res.body).toEqual(mockPost);
+      expect(prisma.blogPost.findFirst).toHaveBeenCalledWith({
+        where: { ...identity, isVisible: true }
+      });
+    });
+
+    it('GET /posts/:identifier should return 404 for an unknown slug', async () => {
+      prisma.blogPost.findFirst.mockResolvedValue(null);
+
+      await request(app)
+        .get('/posts/unknown-article')
+        .expect(404);
+    });
+
     it('POST /posts should resolve authorId securely using admin token claims', async () => {
       const mockPost = { id: 10, title: 'Fresh Shrimp', slug: 'fresh-shrimp', content: 'Shrimp content', authorId: 2 };
       prisma.blogPost.create.mockResolvedValue(mockPost);

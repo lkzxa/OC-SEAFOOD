@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getAuthHeaders } from "@/components/admin/adminApi";
+import { useHasMounted } from "@/hooks/useHasMounted";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
   const { user, token, clearAuth } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHasMounted();
 
   // Form states
   const [telegramToken, setTelegramToken] = useState("");
@@ -22,6 +23,10 @@ export default function AdminSettingsPage() {
   const [smtpPort, setSmtpPort] = useState("");
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPass, setSmtpPass] = useState("");
+  const [telegramTokenConfigured, setTelegramTokenConfigured] = useState(false);
+  const [recruitmentTelegramTokenConfigured, setRecruitmentTelegramTokenConfigured] = useState(false);
+  const [zaloTokenConfigured, setZaloTokenConfigured] = useState(false);
+  const [smtpPassConfigured, setSmtpPassConfigured] = useState(false);
   const [smtpSecure, setSmtpSecure] = useState(false);
   const [emailFrom, setEmailFrom] = useState("");
   const [contactHotline, setContactHotline] = useState("");
@@ -44,10 +49,6 @@ export default function AdminSettingsPage() {
   const [marqueeEnabled, setMarqueeEnabled] = useState(true);
   const [marqueeContent, setMarqueeContent] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Admin access validation
   useEffect(() => {
@@ -78,16 +79,20 @@ export default function AdminSettingsPage() {
         return res.json();
       })
       .then((data) => {
-        setTelegramToken(data.TELEGRAM_BOT_TOKEN || "");
+        setTelegramToken("");
+        setTelegramTokenConfigured(!!data.TELEGRAM_BOT_TOKEN_CONFIGURED);
         setTelegramChatId(data.TELEGRAM_CHAT_ID || "");
-        setRecruitmentTelegramToken(data.RECRUITMENT_TELEGRAM_BOT_TOKEN || "");
+        setRecruitmentTelegramToken("");
+        setRecruitmentTelegramTokenConfigured(!!data.RECRUITMENT_TELEGRAM_BOT_TOKEN_CONFIGURED);
         setRecruitmentTelegramChatId(data.RECRUITMENT_TELEGRAM_CHAT_ID || "");
-        setZaloToken(data.ZALO_OA_ACCESS_TOKEN || "");
+        setZaloToken("");
+        setZaloTokenConfigured(!!data.ZALO_OA_ACCESS_TOKEN_CONFIGURED);
         setZaloUserId(data.ZALO_USER_ID || "");
         setSmtpHost(data.SMTP_HOST || "");
         setSmtpPort(data.SMTP_PORT || "");
         setSmtpUser(data.SMTP_USER || "");
-        setSmtpPass(data.SMTP_PASS || "");
+        setSmtpPass("");
+        setSmtpPassConfigured(!!data.SMTP_PASS_CONFIGURED);
         setSmtpSecure(!!data.SMTP_SECURE);
         setEmailFrom(data.EMAIL_FROM || "");
         setAnnouncementEnabled(!!data.HOMEPAGE_ANNOUNCEMENT_ENABLED);
@@ -107,6 +112,12 @@ export default function AdminSettingsPage() {
   }, [mounted, user, token, clearAuth, router]);
 
   const isAdmin = useMemo(() => mounted && user?.role === "ADMIN", [mounted, user]);
+  const canTestTelegram = Boolean((telegramToken.trim() || telegramTokenConfigured) && telegramChatId.trim());
+  const canTestRecruitmentTelegram = Boolean(
+    (recruitmentTelegramToken.trim() || recruitmentTelegramTokenConfigured) && recruitmentTelegramChatId.trim()
+  );
+  const canTestZalo = Boolean((zaloToken.trim() || zaloTokenConfigured) && zaloUserId.trim());
+  const canTestEmail = Boolean(smtpHost.trim() && smtpUser.trim() && (smtpPass.trim() || smtpPassConfigured));
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,6 +159,15 @@ export default function AdminSettingsPage() {
         throw new Error(data?.error?.message || "Không thể lưu cấu hình");
       }
 
+      if (telegramToken.trim()) setTelegramTokenConfigured(true);
+      if (recruitmentTelegramToken.trim()) setRecruitmentTelegramTokenConfigured(true);
+      if (zaloToken.trim()) setZaloTokenConfigured(true);
+      if (smtpPass.trim()) setSmtpPassConfigured(true);
+      setTelegramToken("");
+      setRecruitmentTelegramToken("");
+      setZaloToken("");
+      setSmtpPass("");
+      window.dispatchEvent(new Event("ocseafood-settings-updated"));
       setMessage({ type: "success", text: "Đã lưu toàn bộ cấu hình hệ thống thành công." });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Đã có lỗi xảy ra" });
@@ -313,7 +333,7 @@ export default function AdminSettingsPage() {
                           type={showTelegramToken ? "text" : "password"}
                           value={telegramToken}
                           onChange={(e) => setTelegramToken(e.target.value)}
-                          placeholder="Telegram Bot Token"
+                          placeholder={telegramTokenConfigured ? "Đã cấu hình — để trống để giữ nguyên" : "Telegram Bot Token"}
                           className="bg-transparent border-none text-slate-200 text-sm w-full py-1.5 focus:outline-none focus:ring-0 placeholder:text-slate-600"
                         />
                         <button
@@ -326,6 +346,11 @@ export default function AdminSettingsPage() {
                           </span>
                         </button>
                       </div>
+                      {telegramTokenConfigured && !telegramToken.trim() && (
+                        <p className="text-[11px] font-bold text-emerald-400">
+                          Token đã được lưu bảo mật. Để trống khi lưu sẽ giữ nguyên token hiện tại.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -343,7 +368,7 @@ export default function AdminSettingsPage() {
 
                     <button
                       type="button"
-                      disabled={testingTelegram || !telegramToken || !telegramChatId}
+                      disabled={testingTelegram || !canTestTelegram}
                       onClick={testTelegram}
                       className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
                     >
@@ -369,7 +394,7 @@ export default function AdminSettingsPage() {
                           type={showRecruitmentTelegramToken ? "text" : "password"}
                           value={recruitmentTelegramToken}
                           onChange={(e) => setRecruitmentTelegramToken(e.target.value)}
-                          placeholder="Telegram Bot Token Tuyển Dụng"
+                          placeholder={recruitmentTelegramTokenConfigured ? "Đã cấu hình — để trống để giữ nguyên" : "Telegram Bot Token Tuyển Dụng"}
                           className="bg-transparent border-none text-slate-200 text-sm w-full py-1.5 focus:outline-none focus:ring-0 placeholder:text-slate-600"
                         />
                         <button
@@ -382,6 +407,11 @@ export default function AdminSettingsPage() {
                           </span>
                         </button>
                       </div>
+                      {recruitmentTelegramTokenConfigured && !recruitmentTelegramToken.trim() && (
+                        <p className="text-[11px] font-bold text-emerald-400">
+                          Token tuyển dụng đã được lưu bảo mật. Để trống khi lưu sẽ giữ nguyên token hiện tại.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -399,7 +429,7 @@ export default function AdminSettingsPage() {
 
                     <button
                       type="button"
-                      disabled={testingRecruitmentTelegram || !recruitmentTelegramToken || !recruitmentTelegramChatId}
+                      disabled={testingRecruitmentTelegram || !canTestRecruitmentTelegram}
                       onClick={testRecruitmentTelegram}
                       className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
                     >
@@ -425,7 +455,7 @@ export default function AdminSettingsPage() {
                           type={showZaloToken ? "text" : "password"}
                           value={zaloToken}
                           onChange={(e) => setZaloToken(e.target.value)}
-                          placeholder="Zalo OA Access Token"
+                          placeholder={zaloTokenConfigured ? "Đã cấu hình — để trống để giữ nguyên" : "Zalo OA Access Token"}
                           className="bg-transparent border-none text-slate-200 text-sm w-full py-1.5 focus:outline-none focus:ring-0 placeholder:text-slate-600"
                         />
                         <button
@@ -438,6 +468,11 @@ export default function AdminSettingsPage() {
                           </span>
                         </button>
                       </div>
+                      {zaloTokenConfigured && !zaloToken.trim() && (
+                        <p className="text-[11px] font-bold text-emerald-400">
+                          Zalo token đã được lưu bảo mật. Để trống khi lưu sẽ giữ nguyên token hiện tại.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -455,7 +490,7 @@ export default function AdminSettingsPage() {
 
                     <button
                       type="button"
-                      disabled={testingZalo || !zaloToken || !zaloUserId}
+                      disabled={testingZalo || !canTestZalo}
                       onClick={testZalo}
                       className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
                     >
@@ -521,7 +556,7 @@ export default function AdminSettingsPage() {
                           type={showSmtpPass ? "text" : "password"}
                           value={smtpPass}
                           onChange={(e) => setSmtpPass(e.target.value)}
-                          placeholder="Mật khẩu ứng dụng SMTP"
+                          placeholder={smtpPassConfigured ? "Đã cấu hình — để trống để giữ nguyên" : "Mật khẩu ứng dụng SMTP"}
                           className="bg-transparent border-none text-slate-200 text-sm w-full py-1.5 focus:outline-none focus:ring-0 placeholder:text-slate-600"
                         />
                         <button
@@ -534,6 +569,11 @@ export default function AdminSettingsPage() {
                           </span>
                         </button>
                       </div>
+                      {smtpPassConfigured && !smtpPass.trim() && (
+                        <p className="text-[11px] font-bold text-emerald-400">
+                          SMTP password đã được lưu bảo mật. Để trống khi lưu sẽ giữ nguyên mật khẩu hiện tại.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -561,7 +601,7 @@ export default function AdminSettingsPage() {
 
                     <button
                       type="button"
-                      disabled={testingEmail || !smtpHost || !smtpUser || !smtpPass}
+                      disabled={testingEmail || !canTestEmail}
                       onClick={testEmail}
                       className="inline-flex items-center gap-2 bg-navy-800 hover:bg-navy-700 border border-navy-700 text-slate-200 text-xs font-extrabold uppercase tracking-widest px-4 py-2.5 rounded-xl disabled:opacity-40 cursor-pointer"
                     >
@@ -587,7 +627,7 @@ export default function AdminSettingsPage() {
                   <div className="space-y-4 pt-4 border-t border-navy-900">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                        Số điện thoại Hotline (Ví dụ: 0901234567)
+                        Số điện thoại Hotline chính thức: 0908 464 818
                       </label>
                       <input
                         type="text"
@@ -600,7 +640,7 @@ export default function AdminSettingsPage() {
 
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                        Đường dẫn Zalo (Ví dụ: https://zalo.me/0901234567)
+                        Đường dẫn Zalo chính thức: https://zalo.me/0908464818
                       </label>
                       <input
                         type="text"
@@ -709,7 +749,7 @@ export default function AdminSettingsPage() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 cursor-pointer text-sm"
+                      className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 cursor-pointer text-sm"
                     >
                       {saving ? "Đang lưu cấu hình..." : "LƯU CẤU HÌNH HỆ THỐNG"}
                     </button>

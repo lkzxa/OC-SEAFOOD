@@ -5,11 +5,13 @@ import { useAuthStore } from "../store/useAuthStore";
 
 // Mock next/navigation
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const mockGet = vi.fn().mockReturnValue(null);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
+    replace: mockReplace,
   }),
   useSearchParams: () => ({
     get: mockGet,
@@ -19,6 +21,7 @@ vi.mock("next/navigation", () => ({
 describe("Authentication Page (Login & Register)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGet.mockReturnValue(null);
     useAuthStore.getState().clearAuth();
     global.fetch = vi.fn();
   });
@@ -78,7 +81,7 @@ describe("Authentication Page (Login & Register)", () => {
     const mockUser = { id: 1, email: "user@example.com", name: "Nguyễn Văn A", role: "CUSTOMER" };
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ token: "fake-jwt-token", user: mockUser }),
+      json: () => Promise.resolve({ user: mockUser }),
     });
     global.fetch = mockFetch;
 
@@ -93,10 +96,17 @@ describe("Authentication Page (Login & Register)", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(useAuthStore.getState().token).toBe("fake-jwt-token");
+      expect(useAuthStore.getState().token).toBeNull();
       expect(useAuthStore.getState().user).toEqual(mockUser);
     });
 
+    expect(mockFetch).toHaveBeenCalledWith("/api/auth/login", expect.objectContaining({
+      body: JSON.stringify({
+        email: "user@example.com",
+        password: "correctpassword",
+        rememberMe: false,
+      }),
+    }));
     expect(mockPush).toHaveBeenCalledWith("/");
   });
 
@@ -136,7 +146,7 @@ describe("Authentication Page (Login & Register)", () => {
       if (url.includes("/api/auth/login")) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ token: "new-user-jwt", user: mockUser }),
+          json: () => Promise.resolve({ user: mockUser }),
         });
       }
       return Promise.reject(new Error("Unknown endpoint"));
@@ -160,10 +170,35 @@ describe("Authentication Page (Login & Register)", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(useAuthStore.getState().token).toBe("new-user-jwt");
+      expect(useAuthStore.getState().token).toBeNull();
       expect(useAuthStore.getState().user).toEqual(mockUser);
     });
 
     expect(mockPush).toHaveBeenCalledWith("/");
+  });
+
+  it("should send the returned OAuth state with the Google callback code", async () => {
+    const mockUser = { id: 1, email: "admin@example.com", name: "Admin", role: "ADMIN" };
+    mockGet.mockImplementation((key: string) => {
+      if (key === "code") return "authorization-code";
+      if (key === "state") return "random-server-state";
+      return null;
+    });
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ user: mockUser }),
+    });
+    global.fetch = mockFetch;
+
+    render(<LoginPage />);
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().user).toEqual(mockUser);
+    });
+    expect(mockFetch).toHaveBeenCalledWith("/api/auth/google", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ code: "authorization-code", state: "random-server-state" }),
+    }));
+    expect(mockReplace).toHaveBeenCalledWith("/login");
   });
 });

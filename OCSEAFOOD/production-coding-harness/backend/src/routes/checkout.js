@@ -1,4 +1,5 @@
 const express = require('express');
+const { OFFICIAL_PHONE_DISPLAY } = require('../constants/contact');
 const router = express.Router();
 const { randomUUID } = require('crypto');
 const prisma = require('../config/prisma');
@@ -288,7 +289,7 @@ router.post('/', limiter, optionalAuth, validateBody(CheckoutSchema), async (req
         <p>Xin chào <strong>${createdOrder.fullName}</strong>,</p>
         <p>Chúng tôi đã nhận được đơn hàng của bạn với mã đơn <strong>${createdOrder.code}</strong>, tổng giá trị <strong>${formattedTotal}</strong>.</p>
         <p>Nhân viên tư vấn của ỐC SEAFOOD sẽ liên hệ với bạn qua số điện thoại <strong>${createdOrder.phone}</strong> trong thời gian sớm nhất để xác nhận đơn hàng và hỗ trợ giao hàng.</p>
-        <p>Nếu cần hỗ trợ gấp, vui lòng gọi hotline <strong>0908 464 818</strong>.</p>
+        <p>Nếu cần hỗ trợ gấp, vui lòng gọi hotline <strong>${OFFICIAL_PHONE_DISPLAY}</strong>.</p>
         <p>Trân trọng,<br/>ỐC SEAFOOD</p>
       `;
       await tx.notificationOutbox.create({

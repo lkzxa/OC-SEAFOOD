@@ -3,10 +3,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
-import { COMBOS, Combo } from "@/data/combos";
+import { Combo, ComboApiResponse, mapApiCombo } from "@/data/combos";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import LoadingState from "@/components/LoadingState";
+import StatusPanel from "@/components/StatusPanel";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import { OFFICIAL_PHONE_TEL } from "@/constants/contact";
 
 interface ComboDetailContentProps {
   slug: string;
@@ -21,98 +25,84 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
   const [combo, setCombo] = useState<Combo | null>(null);
   const [relatedCombos, setRelatedCombos] = useState<Combo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<"not-found" | "service" | null>(null);
+  const [requestVersion, setRequestVersion] = useState(0);
 
   useEffect(() => {
     async function loadComboData() {
       try {
         const res = await fetch("/api/combos");
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            const formatted = data.map((c: any) => ({
-              id: c.id,
-              name: c.name,
-              slug: c.slug,
-              description: c.description,
-              originalPrice: c.originalPrice ? Number(c.originalPrice) : undefined,
-              price: c.price ? Number(c.price) : undefined,
-              showContact: c.showContact || false,
-              image: c.image,
-              tag: c.tag || undefined,
-              discountBadge: c.discountBadge || undefined,
-              items: c.items,
-            }));
-            const found = formatted.find((c) => c.slug === slug);
-            if (found) {
-              setCombo(found);
-              setRelatedCombos(formatted.filter((c) => c.id !== found.id).slice(0, 3));
-              return;
-            }
-          }
+        if (!res.ok) throw new Error("Combo service unavailable");
+        const json = await res.json();
+        const data = Array.isArray(json) ? json : (json.data ?? []);
+        const formatted = (data as ComboApiResponse[]).map(mapApiCombo);
+        const found = formatted.find((c) => c.slug === slug);
+        if (found) {
+          setActiveImageIndex(0);
+          setCombo(found);
+          setRelatedCombos(formatted.filter((c) => c.id !== found.id).slice(0, 3));
+          setLoadError(null);
+          return;
         }
+        setCombo(null);
+        setLoadError("not-found");
       } catch (err) {
         console.error("Failed to load combo detail from backend:", err);
-      }
-      const staticFound = COMBOS.find((c) => c.slug === slug) || null;
-      setCombo(staticFound);
-      if (staticFound) {
-        setRelatedCombos(COMBOS.filter((c) => c.id !== staticFound.id).slice(0, 3));
+        setCombo(null);
+        setLoadError("service");
       }
     }
+    void Promise.resolve().then(() => setLoading(true));
     loadComboData().finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, requestVersion]);
 
-  // Generate slideshow images: current combo image + 2 placeholders
+  // Use only the combo image managed by OCSEAFOOD.
   const images = useMemo(() => {
     if (!combo) return [];
-    const list = [combo.image];
-    const placeholders = [
-      "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=800&q=80",
-      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&q=80",
-      "https://images.unsplash.com/photo-1553618551-fba689030290?w=800&q=80"
-    ];
-    placeholders.forEach(placeholder => {
-      if (list.length < 3 && !list.includes(placeholder)) {
-        list.push(placeholder);
-      }
-    });
-    return list;
+    return combo.image ? [combo.image] : [];
   }, [combo]);
 
   // Autoplay timer: 4s interval
   useEffect(() => {
-    if (images.length <= 1) return;
+    if (images.length <= 1 || (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
     const timer = setInterval(() => {
       setActiveImageIndex((prev) => (prev + 1) % images.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, [activeImageIndex, images]);
-
-  // Reset image index when slug changes
-  useEffect(() => {
-    setActiveImageIndex(0);
-  }, [slug]);
+  }, [images.length]);
 
   if (loading) {
+    return <LoadingState label="Đang tải thông tin combo..." />;
+  }
+
+  if (loadError === "service") {
     return (
-      <div className="flex justify-center items-center py-40 w-full">
-        <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
+      <StatusPanel
+        announce="assertive"
+        description="Không thể kết nối dữ liệu combo mới nhất. Vui lòng thử lại trước khi đặt hàng."
+        eyebrow="Dịch vụ tạm thời gián đoạn"
+        icon="cloud_off"
+        onPrimaryAction={() => setRequestVersion((value) => value + 1)}
+        primaryLabel="Thử tải lại"
+        secondaryHref="/combo"
+        secondaryLabel="Xem danh sách combo"
+        title="Chưa thể tải combo"
+      />
     );
   }
 
   if (!combo) {
     return (
-      <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-24 text-center space-y-6">
-        <h1 className="text-3xl font-black text-white uppercase">Combo Không Tồn Tại</h1>
-        <p className="text-slate-400 text-sm">Vui lòng kiểm tra lại đường dẫn hoặc quay về trang danh sách combo.</p>
-        <Link 
-          href="/combo" 
-          className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-colors text-xs"
-        >
-          Quay lại Trang Combo
-        </Link>
-      </div>
+      <StatusPanel
+        description="Combo có thể đã ngừng hiển thị hoặc đường dẫn chưa chính xác."
+        eyebrow="Combo không khả dụng"
+        icon="restaurant_menu"
+        primaryHref="/combo"
+        primaryLabel="Quay lại trang combo"
+        secondaryHref="/menu"
+        secondaryLabel="Xem thực đơn"
+        title="Combo không tồn tại"
+      />
     );
   }
 
@@ -177,18 +167,14 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
         {/* Left: Combo Image Slideshow */}
         <div className="bg-navy-950 border border-navy-800/80 rounded-2xl p-4 shadow-2xl relative overflow-hidden group">
           <div className="aspect-[4/3] relative rounded-xl overflow-hidden bg-navy-900">
-            {images.map((imgUrl, index) => (
-              <img
-                key={index}
-                alt={`${combo.name} - Slide ${index + 1}`}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
-                  index === activeImageIndex 
-                    ? "opacity-100 scale-100 z-10" 
-                    : "opacity-0 scale-95 pointer-events-none z-0"
-                }`}
-                src={optimizeImageUrl(imgUrl, 1000)}
-              />
-            ))}
+            <Image
+              key={images[activeImageIndex] || "placeholder"}
+              alt={`${combo.name} - ảnh ${activeImageIndex + 1}`}
+              className="object-cover"
+              fill
+              sizes="(max-width: 1023px) 100vw, 50vw"
+              src={optimizeImageUrl(images[activeImageIndex], 1000) || "/media-placeholder.svg"}
+            />
             {combo.discountBadge && (
               <span className="absolute top-4 right-4 bg-red-600 text-white text-xs font-black px-3.5 py-1.5 uppercase tracking-widest rounded-full shadow z-20">
                 {combo.discountBadge}
@@ -206,16 +192,16 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                 <button
                   type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
-                  aria-label="Previous image"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 hover:text-navy-950 cursor-pointer z-20"
+                  aria-label="Ảnh trước"
                 >
                   <span className="material-symbols-outlined select-none text-lg">chevron_left</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev + 1) % images.length)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 cursor-pointer z-20"
-                  aria-label="Next image"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-navy-950/70 border border-navy-800 text-white rounded-full opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 hover:bg-orange-500 hover:border-orange-500 hover:text-navy-950 cursor-pointer z-20"
+                  aria-label="Ảnh tiếp theo"
                 >
                   <span className="material-symbols-outlined select-none text-lg">chevron_right</span>
                 </button>
@@ -227,13 +213,12 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                       key={index}
                       type="button"
                       onClick={() => setActiveImageIndex(index)}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                        index === activeImageIndex
-                          ? "bg-orange-500 w-4"
-                          : "bg-white/50 hover:bg-white"
-                      }`}
-                      aria-label={`Go to slide ${index + 1}`}
-                    />
+                      className="flex h-8 min-w-8 items-center justify-center rounded-full cursor-pointer"
+                      aria-label={`Chuyển đến ảnh ${index + 1}`}
+                      aria-current={index === activeImageIndex ? "true" : undefined}
+                    >
+                      <span aria-hidden="true" className={`h-2 rounded-full ${index === activeImageIndex ? "w-4 bg-orange-500" : "w-2 bg-white/60"}`} />
+                    </button>
                   ))}
                 </div>
               </>
@@ -256,26 +241,18 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
             <div>
               <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">Giá bán trọn gói</p>
               <div className="flex items-baseline gap-3 mt-1">
-                {combo.showContact ? (
-                  <span className="text-3xl font-black text-yellow-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-                    Liên hệ
+                <span className="text-3xl font-black text-yellow-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+                  {combo.showContact ? `Từ ${formatPrice(combo.price || 0)}` : formatPrice(combo.price || 0)}
+                </span>
+                {combo.originalPrice && (
+                  <span className="text-sm text-slate-500 line-through">
+                    {formatPrice(combo.originalPrice)}
                   </span>
-                ) : (
-                  <>
-                    <span className="text-3xl font-black text-yellow-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-                      {formatPrice(combo.price || 0)}
-                    </span>
-                    {combo.originalPrice && (
-                      <span className="text-sm text-slate-500 line-through">
-                        {formatPrice(combo.originalPrice)}
-                      </span>
-                    )}
-                  </>
                 )}
               </div>
             </div>
             <span className="text-[10px] bg-orange-500/10 border border-orange-500/20 text-orange-400 px-3 py-1.5 rounded-lg font-bold uppercase tracking-wider">
-              {combo.showContact ? "Liên hệ để biết giá" : "Tiết kiệm hơn mua lẻ"}
+              {combo.showContact ? "Tư vấn theo tiệc" : "Tiết kiệm hơn mua lẻ"}
             </span>
           </div>
 
@@ -307,20 +284,23 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="w-10 h-10 flex items-center justify-center text-slate-400 hover:bg-navy-800 hover:text-white rounded-lg transition-colors cursor-pointer"
-                  aria-label="Decrease quantity"
+                  aria-label="Giảm số lượng"
                 >
                   <span className="material-symbols-outlined text-lg select-none">remove</span>
                 </button>
                 <input
                   type="number"
                   value={quantity}
+                  aria-label="Số lượng"
+                  min={1}
+                  max={99}
                   onChange={(e) => setQuantity(Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1)))}
-                  className="w-12 text-center bg-transparent border-none outline-none text-slate-100 text-sm font-extrabold focus:ring-0"
+                  className="h-10 w-12 text-center bg-transparent border-none outline-none text-slate-100 text-sm font-extrabold focus:ring-0"
                 />
                 <button
                   onClick={() => setQuantity((q) => Math.min(99, q + 1))}
                   className="w-10 h-10 flex items-center justify-center text-slate-400 hover:bg-navy-800 hover:text-white rounded-lg transition-colors cursor-pointer"
-                  aria-label="Increase quantity"
+                  aria-label="Tăng số lượng"
                 >
                   <span className="material-symbols-outlined text-lg select-none">add</span>
                 </button>
@@ -331,7 +311,7 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {combo.showContact ? (
                 <a
-                  href="tel:0908464818"
+                  href={OFFICIAL_PHONE_TEL}
                   className="bg-white hover:bg-amber-50 text-red-600 font-extrabold py-4 px-6 rounded-xl uppercase text-xs tracking-widest transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98] text-center inline-flex items-center justify-center gap-2 sm:col-span-2"
                 >
                   <span className="material-symbols-outlined text-base">call</span>
@@ -402,13 +382,14 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
           {relatedCombos.map((c) => (
             <div
               key={c.id}
-              className="bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 rounded-xl overflow-hidden border border-amber-400/40 hover:border-yellow-300 hover:shadow-[0_12px_40px_rgba(239,68,68,0.35)] hover:-translate-y-1 transition-all duration-300 flex flex-col group shadow-lg holographic-card"
+                className="rounded-xl overflow-hidden border border-amber-400/70 bg-orange-500 hover:border-amber-300 hover:shadow-[0_16px_45px_rgba(249,115,22,0.28)] hover:-translate-y-1 transition-all duration-300 flex flex-col group shadow-lg holographic-card"
             >
               <Link href={`/combo/${c.slug}`} className="relative aspect-[4/3] overflow-hidden bg-navy-900 block">
-                <img
+                <Image
                   alt={c.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                   src={optimizeImageUrl(c.image, 600)}
                 />
                 {c.discountBadge && (
@@ -422,37 +403,29 @@ export default function ComboDetailContent({ slug }: ComboDetailContentProps) {
                   </div>
                 )}
               </Link>
-              <div className="p-5 flex flex-col flex-grow space-y-4">
+              <div className="bg-gradient-to-br from-orange-500 via-orange-500 to-amber-400 p-5 flex flex-col flex-grow space-y-4">
                 <Link href={`/combo/${c.slug}`}>
-                  <h4 className="font-extrabold text-lg text-white group-hover:text-amber-100 transition-colors drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]">
+                  <h3 className="font-extrabold text-lg text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-colors">
                     {c.name}
-                  </h4>
+                  </h3>
                 </Link>
-                <p className="text-amber-100 text-xs md:text-sm line-clamp-3 leading-relaxed flex-grow">
+                <p className="text-white/90 text-xs md:text-sm line-clamp-3 leading-relaxed flex-grow">
                   {c.description}
                 </p>
                 <div className="flex items-center justify-between pt-2">
                   <div className="flex flex-col">
-                    {c.showContact ? (
-                      <span className="text-yellow-300 font-black text-xl md:text-2xl drop-shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
-                        Liên hệ
+                    {c.originalPrice && (
+                      <span className="text-white/70 line-through text-xs md:text-sm">
+                        {formatPrice(c.originalPrice)}
                       </span>
-                    ) : (
-                      <>
-                        {c.originalPrice && (
-                          <span className="text-amber-200/80 line-through text-xs md:text-sm">
-                            {formatPrice(c.originalPrice)}
-                          </span>
-                        )}
-                        <span className="text-yellow-300 font-black text-xl md:text-2xl drop-shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
-                          {formatPrice(c.price || 0)}
-                        </span>
-                      </>
                     )}
+                    <span className="text-yellow-300 font-black text-xl md:text-2xl drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">
+                      {c.showContact ? `Từ ${formatPrice(c.price || 0)}` : formatPrice(c.price || 0)}
+                    </span>
                   </div>
                   <Link
                     href={`/combo/${c.slug}`}
-                    className="bg-white text-red-600 hover:bg-amber-50 hover:text-red-700 px-5 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-md text-center"
+                    className="bg-white text-red-600 hover:bg-amber-50 hover:text-red-700 px-5 py-2.5 rounded-lg text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer shadow-[0_6px_18px_rgba(0,0,0,0.18)] text-center"
                   >
                     Chi tiết
                   </Link>

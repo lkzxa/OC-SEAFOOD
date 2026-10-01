@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import FloatingContact from '../components/FloatingContact';
 
@@ -11,6 +11,11 @@ vi.mock('next/navigation', () => ({
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+async function openContactOptions() {
+  const toggle = await screen.findByRole('button', { name: 'Mở kênh liên hệ' });
+  fireEvent.click(toggle);
+}
 
 describe('FloatingContact Component', () => {
   beforeEach(() => {
@@ -37,6 +42,7 @@ describe('FloatingContact Component', () => {
     });
 
     render(<FloatingContact />);
+    await openContactOptions();
 
     await waitFor(() => {
       expect(screen.getByTitle('Facebook Fanpage')).not.toBeNull();
@@ -55,6 +61,59 @@ describe('FloatingContact Component', () => {
     // Check Hotline link
     const hotlineLink = screen.getByTitle('Hotline: 0909999999');
     expect(hotlineLink.getAttribute('href')).toBe('tel:0909999999');
+  });
+
+  it('normalizes the formatted official Hotline for the telephone link', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        CONTACT_HOTLINE: '0908 464 818',
+        CONTACT_ZALO: 'https://zalo.me/0908464818',
+        CONTACT_FACEBOOK: '',
+      }),
+    });
+
+    render(<FloatingContact />);
+    await openContactOptions();
+
+    const hotlineLink = await screen.findByTitle('Hotline: 0908 464 818');
+    expect(hotlineLink.getAttribute('href')).toBe('tel:0908464818');
+    expect(screen.getByTitle('Chat Zalo').getAttribute('href')).toBe('https://zalo.me/0908464818');
+  });
+
+  it('keeps mobile contacts collapsed until the user opens them', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        CONTACT_HOTLINE: '0908 464 818',
+        CONTACT_ZALO: '0908464818',
+        CONTACT_FACEBOOK: 'ocseafood',
+      }),
+    });
+
+    render(<FloatingContact />);
+
+    const toggle = await screen.findByRole('button', { name: 'Mở kênh liên hệ' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(document.getElementById('contact-options')).toBeNull();
+
+    fireEvent.click(toggle);
+
+    const options = document.getElementById('contact-options');
+    expect(options).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Đóng kênh liên hệ' }).getAttribute('aria-expanded')).toBe('true');
+    expect(within(options as HTMLElement).getByRole('link', { name: 'Gọi hotline 0908 464 818' }).getAttribute('href')).toBe('tel:0908464818');
+  });
+
+  it('uses the official contact defaults when the public settings request fails', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+
+    render(<FloatingContact />);
+    await openContactOptions();
+
+    const hotlineLink = await screen.findByTitle('Hotline: 0908 464 818');
+    expect(hotlineLink.getAttribute('href')).toBe('tel:0908464818');
+    expect(screen.getByTitle('Chat Zalo').getAttribute('href')).toBe('https://zalo.me/0908464818');
   });
 
   it('should not render anything if settings are empty', async () => {

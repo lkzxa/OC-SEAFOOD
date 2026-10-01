@@ -5,8 +5,17 @@ const prisma = require('../config/prisma');
 const env = require('../config/env');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const { signToken } = require('../utils/jwt');
+const auth = require('../middleware/auth');
+const {
+  clearOAuthStateCookie,
+  clearSessionCookie,
+  getOAuthState,
+  setOAuthStateCookie,
+  setSessionCookie,
+} = require('../utils/authCookies');
 const { RegisterSchema, LoginSchema, ForgotPasswordSchema, ResetPasswordSchema } = require('../validation/auth');
 const { authRateLimiter } = require('../middleware/rateLimiter');
+const logger = require('../utils/logger');
 
 // POST /auth/register - Register a new user (BUG-C03 fix: rate limited)
 router.post('/register', authRateLimiter, async (req, res, next) => {
@@ -72,7 +81,7 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
       });
     }
 
-    const { email, password } = parsed.data;
+    const { email, password, rememberMe } = parsed.data;
 
     const user = await prisma.user.findUnique({
       where: { email }
@@ -106,12 +115,16 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
       });
     }
 
-    const token = signToken({ id: user.id, email: user.email, role: user.role });
+    const token = signToken(
+      { id: user.id, email: user.email, role: user.role },
+      rememberMe ? '30d' : '1d'
+    );
+    setSessionCookie(res, token, rememberMe);
 
     const { password: _, ...userWithoutPassword } = user;
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({
-      token,
       user: userWithoutPassword
     });
   } catch (err) {
@@ -119,10 +132,43 @@ router.post('/login', authRateLimiter, async (req, res, next) => {
   }
 });
 
+// GET /auth/session - Restore the browser session from its HttpOnly cookie
+router.get('/session', auth, async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) {
+      clearSessionCookie(res);
+      return res.status(401).json({
+        error: { message: 'Unauthorized: Session user no longer exists', status: 401 }
+      });
+    }
+
+    const { password: _, ...userWithoutPassword } = user;
+    res.set('Cache-Control', 'no-store');
+    return res.status(200).json({ user: userWithoutPassword });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /auth/logout - Revoke the browser-held session cookie
+router.post('/logout', (req, res) => {
+  clearSessionCookie(res);
+  return res.status(204).send();
+});
+
+// POST /auth/google/state - Create browser-bound, short-lived OAuth state
+router.post('/google/state', authRateLimiter, (req, res) => {
+  const state = crypto.randomBytes(32).toString('base64url');
+  setOAuthStateCookie(res, state);
+  res.set('Cache-Control', 'no-store');
+  return res.status(200).json({ state });
+});
+
 // POST /auth/google - Authenticate User via Google OAuth 2.0
 router.post('/google', authRateLimiter, async (req, res, next) => {
   try {
-    const { code } = req.body;
+    const { code, state } = req.body;
     if (!code) {
       return res.status(400).json({
         error: {
@@ -132,14 +178,30 @@ router.post('/google', authRateLimiter, async (req, res, next) => {
       });
     }
 
+    const expectedState = getOAuthState(req);
+    clearOAuthStateCookie(res);
+    const stateMatches = typeof state === 'string'
+      && typeof expectedState === 'string'
+      && state.length === expectedState.length
+      && crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expectedState));
+
+    if (!stateMatches) {
+      return res.status(403).json({
+        error: {
+          message: 'OAuth state is missing or invalid',
+          status: 403
+        }
+      });
+    }
+
     let email = '';
     let name = '';
     let googleId = '';
     let avatar = '';
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/login';
+    const clientId = env.GOOGLE_CLIENT_ID;
+    const clientSecret = env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/login';
 
     if (!clientId || !clientSecret) {
       return res.status(500).json({
@@ -260,10 +322,11 @@ router.post('/google', authRateLimiter, async (req, res, next) => {
 
     // Generate JWT token
     const token = signToken({ id: user.id, email: user.email, role: user.role });
+    setSessionCookie(res, token, false);
     const { password: _, ...userWithoutPassword } = user;
 
+    res.set('Cache-Control', 'no-store');
     return res.status(200).json({
-      token,
       user: userWithoutPassword
     });
   } catch (err) {
@@ -349,15 +412,53 @@ router.post('/forgot-password', authRateLimiter, async (req, res, next) => {
       }
     });
 
-    // Logging for production troubleshooting while maintaining privacy
-    const maskedEmail = email.replace(/^(.)(.*)(@.*)$/, (_, first, middle, domain) => {
-      return `${first}${'*'.repeat(Math.min(middle.length, 5))}${domain}`;
-    });
-    console.log(`[ForgotPassword] Successfully queued password reset email for user ${maskedEmail} in NotificationOutbox`);
+    logger.info('password_reset_notification_queued');
 
     return res.status(200).json({
       message: 'Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi.'
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /auth/reset-password/validate - Validate a reset token without consuming it
+router.get('/reset-password/validate', authRateLimiter, async (req, res, next) => {
+  try {
+    const token = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+    if (!token) {
+      return res.status(400).json({
+        error: {
+          message: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+          status: 400
+        }
+      });
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const resetTokenRecord = await prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!resetTokenRecord) {
+      return res.status(400).json({
+        error: {
+          message: 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+          status: 400
+        }
+      });
+    }
+
+    res.set('Cache-Control', 'no-store');
+    return res.status(200).json({ valid: true });
   } catch (err) {
     next(err);
   }

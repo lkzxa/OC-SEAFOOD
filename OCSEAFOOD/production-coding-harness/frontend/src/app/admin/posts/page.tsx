@@ -40,8 +40,7 @@ export default function AdminPostsPage() {
   };
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void Promise.resolve().then(loadData);
   }, []);
 
   const handleDelete = async (post: Post) => {
@@ -84,7 +83,7 @@ export default function AdminPostsPage() {
           
           <Link
             href="/admin/posts/new"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-xl transition-colors cursor-pointer text-sm shrink-0 flex items-center gap-2"
+            className="bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3 px-6 rounded-xl transition-colors cursor-pointer text-sm shrink-0 flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-lg">add</span>
             Thêm bài viết mới

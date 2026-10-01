@@ -46,6 +46,7 @@ describe("AdminSettingsPage", () => {
           status: 200,
           json: async () => ({
             TELEGRAM_BOT_TOKEN: "tg-token",
+            TELEGRAM_BOT_TOKEN_CONFIGURED: true,
             TELEGRAM_CHAT_ID: "tg-chat",
             ZALO_OA_ACCESS_TOKEN: "zalo-token",
             ZALO_USER_ID: "zalo-user",
@@ -71,6 +72,8 @@ describe("AdminSettingsPage", () => {
       expect(hotlineInput.value).toBe("090111222");
       expect(zaloInput.value).toBe("https://zalo.me/090111222");
       expect(facebookInput.value).toBe("https://fb.com/myfanpage");
+      const secretInput = screen.getByPlaceholderText("Đã cấu hình — để trống để giữ nguyên") as HTMLInputElement;
+      expect(secretInput.value).toBe("");
     });
   });
 
@@ -136,6 +139,67 @@ describe("AdminSettingsPage", () => {
       expect(body.CONTACT_FACEBOOK).toBe("https://fb.com/myfanpage");
 
       expect(screen.getByText("Đã lưu toàn bộ cấu hình hệ thống thành công.")).not.toBeNull();
+    });
+  });
+
+  it("allows testing saved Telegram config without retyping the hidden token", async () => {
+    useAuthStore.getState().setAuth("admin-token", {
+      id: 1,
+      email: "admin@example.com",
+      name: "Quản Trị",
+      role: "ADMIN",
+    });
+
+    mockFetch.mockImplementation(async (url, options) => {
+      if (url === "/api/settings" && !options?.method) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            TELEGRAM_BOT_TOKEN: "",
+            TELEGRAM_BOT_TOKEN_CONFIGURED: true,
+            TELEGRAM_CHAT_ID: "tg-chat",
+            RECRUITMENT_TELEGRAM_BOT_TOKEN: "",
+            RECRUITMENT_TELEGRAM_BOT_TOKEN_CONFIGURED: true,
+            RECRUITMENT_TELEGRAM_CHAT_ID: "rec-chat",
+            ZALO_OA_ACCESS_TOKEN: "",
+            ZALO_OA_ACCESS_TOKEN_CONFIGURED: true,
+            ZALO_USER_ID: "zalo-user",
+            SMTP_PASS: "",
+            SMTP_PASS_CONFIGURED: true,
+            SMTP_HOST: "smtp.gmail.com",
+            SMTP_USER: "mailer@example.com",
+            HOMEPAGE_ANNOUNCEMENT_ENABLED: false,
+            CONTACT_HOTLINE: "090111222",
+            CONTACT_ZALO: "https://zalo.me/090111222",
+            CONTACT_FACEBOOK: "https://fb.com/myfanpage",
+          }),
+        };
+      }
+      if (url === "/api/settings/test-telegram") {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ status: "success" }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    });
+
+    render(<AdminSettingsPage />);
+
+    const telegramButton = await screen.findByRole("button", { name: /^Gửi thử Telegram$/i });
+    expect((telegramButton as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText("Token đã được lưu bảo mật. Để trống khi lưu sẽ giữ nguyên token hiện tại.")).not.toBeNull();
+
+    fireEvent.click(telegramButton);
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/settings/test-telegram",
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(screen.getByText("Tin nhắn kiểm tra kết nối đã được gửi tới Telegram!")).not.toBeNull();
     });
   });
 });

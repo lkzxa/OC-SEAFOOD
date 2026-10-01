@@ -163,4 +163,40 @@ describe('Password Reset Routes', () => {
       });
     });
   });
+
+  describe('GET /auth/reset-password/validate', () => {
+    it('should reject a missing or invalid token without consuming it', async () => {
+      await request(app)
+        .get('/auth/reset-password/validate')
+        .expect(400);
+
+      prisma.passwordResetToken.findFirst.mockResolvedValue(null);
+      const res = await request(app)
+        .get('/auth/reset-password/validate?token=invalid-token')
+        .expect(400);
+
+      expect(res.body.error.message).toContain('không hợp lệ hoặc đã hết hạn');
+      expect(prisma.passwordResetToken.delete).not.toHaveBeenCalled();
+    });
+
+    it('should accept a live token without consuming it', async () => {
+      prisma.passwordResetToken.findFirst.mockResolvedValue({ id: 55 });
+
+      const res = await request(app)
+        .get('/auth/reset-password/validate?token=valid-token')
+        .expect(200);
+
+      expect(res.body).toEqual({ valid: true });
+      expect(prisma.passwordResetToken.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            tokenHash: expect.any(String),
+            expiresAt: { gt: expect.any(Date) }
+          }),
+          select: { id: true }
+        })
+      );
+      expect(prisma.passwordResetToken.delete).not.toHaveBeenCalled();
+    });
+  });
 });

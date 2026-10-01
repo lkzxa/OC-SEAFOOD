@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
 import { removeVietnameseTones } from "@/utils/stringUtils";
 import { sortByPrice, PriceSortOrder } from "@/utils/sortByPrice";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import LoadingState from "@/components/LoadingState";
+import StatusPanel from "@/components/StatusPanel";
 
 interface Category {
   id: number;
@@ -41,6 +44,8 @@ function MenuContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [requestVersion, setRequestVersion] = useState(0);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [sortOrder, setSortOrder] = useState<PriceSortOrder>(
     sortParam === "price_asc" ? "asc" : "desc"
@@ -72,6 +77,12 @@ function MenuContent() {
   // Fetch categories once on mount
   useEffect(() => {
     let isMounted = true;
+    void Promise.resolve().then(() => {
+      if (isMounted) {
+        setLoadingCategories(true);
+        setLoadError(false);
+      }
+    });
     fetch("/api/categories")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch categories");
@@ -89,6 +100,7 @@ function MenuContent() {
         console.error("Error fetching categories:", err);
         if (isMounted) {
           setCategories([]);
+          setLoadError(true);
           setLoadingCategories(false);
         }
       });
@@ -96,13 +108,14 @@ function MenuContent() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [requestVersion]);
 
   // Fetch products when selectedCategoryId changes
   useEffect(() => {
     let isMounted = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingProducts(true);
+    setLoadError(false);
 
     const url = selectedCategoryId
       ? `/api/products?categoryId=${selectedCategoryId}`
@@ -125,6 +138,7 @@ function MenuContent() {
         console.error("Error fetching products:", err);
         if (isMounted) {
           setProducts([]);
+          setLoadError(true);
           setLoadingProducts(false);
         }
       });
@@ -132,7 +146,7 @@ function MenuContent() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategoryId]);
+  }, [selectedCategoryId, requestVersion]);
 
   const handleCategorySelect = (id: number | null) => {
     setSelectedCategoryId(id);
@@ -187,7 +201,7 @@ function MenuContent() {
       {searchParam && (
         <div className="mb-6 bg-navy-800 border border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)] p-4 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-slate-300">
-            Kết quả tìm kiếm cho: <strong className="text-orange-500">"{searchParam}"</strong> 
+            Kết quả tìm kiếm cho: <strong className="text-orange-500">&ldquo;{searchParam}&rdquo;</strong>
             <span className="text-slate-400 ml-2">({visibleProducts.length} sản phẩm)</span>
           </p>
           <button 
@@ -211,7 +225,7 @@ function MenuContent() {
               onClick={() => handleCategorySelect(null)}
               className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
                 selectedCategoryId === null
-                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  ? "bg-orange-500 text-navy-950 shadow-lg shadow-orange-500/20"
                   : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
               }`}
             >
@@ -229,7 +243,7 @@ function MenuContent() {
                   onClick={() => handleCategorySelect(cat.id)}
                   className={`px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
                     selectedCategoryId === cat.id
-                      ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                      ? "bg-orange-500 text-navy-950 shadow-lg shadow-orange-500/20"
                       : "bg-navy-800 text-slate-300 hover:bg-navy-700 hover:text-orange-500 border border-navy-700"
                   }`}
                 >
@@ -257,49 +271,53 @@ function MenuContent() {
       </div>
 
       {/* PRODUCTS GRID */}
-      {loadingProducts ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, idx) => (
-            <div
-              key={idx}
-              className="bg-navy-800 rounded-lg overflow-hidden border border-navy-700 p-4 space-y-4 animate-pulse"
-            >
-              <div className="aspect-square bg-navy-900 rounded-md"></div>
-              <div className="h-4 bg-navy-700 rounded w-3/4"></div>
-              <div className="h-3 bg-navy-700 rounded w-1/2"></div>
-              <div className="h-6 bg-navy-700 rounded w-1/3 pt-2"></div>
-              <div className="h-10 bg-navy-700 rounded w-full"></div>
-            </div>
-          ))}
-        </div>
+      {loadError ? (
+        <StatusPanel
+          announce="assertive"
+          compact
+          description="Không thể kết nối thực đơn lúc này. Vui lòng thử lại để nhận dữ liệu sản phẩm mới nhất."
+          eyebrow="Dịch vụ tạm thời gián đoạn"
+          icon="cloud_off"
+          onPrimaryAction={() => setRequestVersion((value) => value + 1)}
+          primaryLabel="Thử tải lại"
+          secondaryHref="/"
+          secondaryLabel="Về trang chủ"
+          title="Chưa thể tải thực đơn"
+        />
+      ) : loadingProducts ? (
+        <LoadingState compact label="Đang tải thực đơn hải sản..." />
       ) : visibleProducts.length > 0 ? (
         <div className="space-y-6">
           {activeCategory?.banner && (
             <div className="relative h-[120px] sm:h-[180px] md:h-[240px] w-full rounded-xl overflow-hidden border border-navy-700/50 shadow-lg">
-              <img
+              <Image
                 src={optimizeImageUrl(activeCategory.banner, 1600)}
                 alt={`Banner ${activeCategory.name}`}
-                className="w-full h-full object-cover"
+                className="object-cover"
+                fill
+                sizes="(max-width: 767px) 100vw, 1600px"
               />
             </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {visibleProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} headingLevel="h2" />
             ))}
           </div>
         </div>
       ) : (
-        <div className="text-center py-20 bg-navy-800 rounded-lg border border-navy-700/50">
-          <span className="material-symbols-outlined text-5xl text-slate-500 mb-4 select-none">
-            {searchParam ? "search_off" : "inbox"}
-          </span>
-          <p className="text-slate-400 font-medium text-lg">
-            {searchParam 
-              ? `Không tìm thấy hải sản nào khớp với từ khóa "${searchParam}".`
-              : "Không tìm thấy sản phẩm nào trong danh mục này."}
-          </p>
-        </div>
+        <StatusPanel
+          compact
+          description={searchParam
+            ? `Không có sản phẩm nào khớp với từ khóa “${searchParam}”. Hãy thử một tên hải sản khác.`
+            : "Nhóm sản phẩm này đang được cập nhật. Bạn có thể xem combo hoặc chọn danh mục khác."}
+          eyebrow={searchParam ? "Không có kết quả phù hợp" : "Danh mục đang cập nhật"}
+          icon={searchParam ? "search_off" : "inventory_2"}
+          onPrimaryAction={searchParam ? () => router.push(selectedCategoryId ? `/menu?categoryId=${selectedCategoryId}` : "/menu") : undefined}
+          primaryHref={searchParam ? undefined : "/combo"}
+          primaryLabel={searchParam ? "Xóa tìm kiếm" : "Xem combo"}
+          title={searchParam ? "Không tìm thấy sản phẩm" : "Chưa có sản phẩm"}
+        />
       )}
 
       <RelatedPostsSection />
@@ -311,9 +329,7 @@ export default function MenuPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-20 text-center text-slate-400 animate-pulse">
-          Đang tải thực đơn...
-        </div>
+        <LoadingState label="Đang chuẩn bị thực đơn..." />
       }
     >
       <MenuContent />

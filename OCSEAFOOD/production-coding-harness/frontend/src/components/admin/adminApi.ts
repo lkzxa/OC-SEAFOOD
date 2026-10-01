@@ -14,3 +14,7 @@ export function unwrapCollection<T>(payload: unknown): T[] {
 
   return [];
 }
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}

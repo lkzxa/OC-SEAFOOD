@@ -4,10 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
+import {
+  getOrderStatusClass,
+  getOrderStatusLabel,
+  ORDER_STATUS_OPTIONS,
+  type OrderStatus,
+} from "@/constants/orderStatus";
 import { useAuthStore } from "@/store/useAuthStore";
 import { OrderAuditEntry, useOrderAuditStore } from "@/store/useOrderAuditStore";
-
-type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 
 interface OrderItem {
   id: number;
@@ -59,11 +63,9 @@ interface Pagination {
   totalPages: number;
 }
 
-const statusOptions: Array<{ value: ""; label: string }> | Array<{ value: OrderStatus | ""; label: string }> = [
+const statusOptions: Array<{ value: OrderStatus | ""; label: string }> = [
   { value: "", label: "Tất cả" },
-  { value: "PENDING", label: "Chờ tư vấn" },
-  { value: "CONFIRMED", label: "Đã xác nhận" },
-  { value: "CANCELLED", label: "Đã hủy" },
+  ...ORDER_STATUS_OPTIONS,
 ];
 
 const formatCurrency = (value: number | string) =>
@@ -78,28 +80,16 @@ const formatDateTime = (value: string) =>
     timeStyle: "short",
   }).format(new Date(value));
 
-const statusLabel = (status: OrderStatus) => {
-  if (status === "CONFIRMED") return "Đã xác nhận";
-  if (status === "CANCELLED") return "Đã hủy";
-  return "Chờ tư vấn";
-};
-
-const statusClass = (status: OrderStatus) => {
-  if (status === "CONFIRMED") return "bg-green-500/10 text-green-400 border-green-500/20";
-  if (status === "CANCELLED") return "bg-red-500/10 text-red-400 border-red-500/20";
-  return "bg-orange-500/10 text-orange-400 border-orange-500/20";
-};
-
 const renderAuditDiff = (entry: OrderAuditEntry) => {
-  const oldValues = entry.oldValues as Record<string, any>;
-  const newValues = entry.newValues as Record<string, any>;
+  const oldValues = entry.oldValues as Record<string, unknown>;
+  const newValues = entry.newValues as Record<string, unknown>;
 
   return (
     <div className="space-y-2 text-xs text-slate-300">
       {entry.changedFields.map((field) => {
         if (field === "status") {
-          const oldLabel = statusLabel(oldValues.status as OrderStatus);
-          const newLabel = statusLabel(newValues.status as OrderStatus);
+          const oldLabel = getOrderStatusLabel(oldValues.status as OrderStatus);
+          const newLabel = getOrderStatusLabel(newValues.status as OrderStatus);
           return (
             <div key={field} className="flex items-center gap-2">
               <span className="text-slate-500 font-bold">Trạng thái:</span>
@@ -111,21 +101,21 @@ const renderAuditDiff = (entry: OrderAuditEntry) => {
         }
 
         if (field === "note") {
-          const oldNote = oldValues.note || "(Trống)";
-          const newNote = newValues.note || "(Trống)";
+          const oldNote = typeof oldValues.note === "string" && oldValues.note ? oldValues.note : "(Trống)";
+          const newNote = typeof newValues.note === "string" && newValues.note ? newValues.note : "(Trống)";
           return (
             <div key={field} className="space-y-1">
               <span className="text-slate-500 font-bold">Ghi chú:</span>
               <div className="pl-3 border-l-2 border-navy-800 text-slate-400 italic">
-                "{oldNote}" ➔ "{newNote}"
+                &ldquo;{oldNote}&rdquo; ➔ &ldquo;{newNote}&rdquo;
               </div>
             </div>
           );
         }
 
         if (field === "totalFinal") {
-          const oldTotal = oldValues.totalFinal as number;
-          const newTotal = newValues.totalFinal as number;
+          const oldTotal = Number(oldValues.totalFinal);
+          const newTotal = Number(newValues.totalFinal);
           return (
             <div key={field} className="flex items-center gap-2">
               <span className="text-slate-500 font-bold">Tổng tiền:</span>
@@ -342,7 +332,8 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    loadOrders(1, filters);
+    void Promise.resolve().then(() => loadOrders(1, filters));
+    // Initial table load intentionally uses the default filter snapshot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -524,7 +515,7 @@ export default function AdminOrdersPage() {
 
           <button
             type="submit"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl text-sm"
+            className="bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-5 py-3 rounded-xl text-sm"
           >
             Áp dụng bộ lọc
           </button>
@@ -578,9 +569,11 @@ export default function AdminOrdersPage() {
                           )
                         }
                       >
-                        <option value="PENDING">Chờ tư vấn</option>
-                        <option value="CONFIRMED">Đã xác nhận</option>
-                        <option value="CANCELLED">Đã hủy</option>
+                        {ORDER_STATUS_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </Field>
                     <Field label="Tổng tiền đề xuất">
@@ -634,7 +627,7 @@ export default function AdminOrdersPage() {
                               <input
                                 type="number"
                                 min="0"
-                                step="1000"
+                                step="1"
                                 className="admin-input"
                                 value={item.priceFinal}
                                 onChange={(e) =>
@@ -651,7 +644,7 @@ export default function AdminOrdersPage() {
                   <button
                     type="submit"
                     disabled={savingOrder}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50"
+                    className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-5 py-3 rounded-xl text-sm disabled:opacity-50"
                   >
                     {savingOrder ? "Đang lưu..." : "Lưu thay đổi đơn hàng"}
                   </button>
@@ -741,9 +734,9 @@ export default function AdminOrdersPage() {
                       <td className="py-3 px-4 font-bold text-orange-400">{formatCurrency(order.totalFinal)}</td>
                       <td className="py-3 px-4">
                         <span
-                          className={`inline-flex text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${statusClass(order.status)}`}
+                          className={`inline-flex text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border ${getOrderStatusClass(order.status)}`}
                         >
-                          {statusLabel(order.status)}
+                          {getOrderStatusLabel(order.status)}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-xs text-slate-400">{formatDateTime(order.createdAt)}</td>

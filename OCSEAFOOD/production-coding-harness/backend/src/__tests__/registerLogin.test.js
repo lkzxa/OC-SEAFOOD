@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../app');
 const prisma = require('../config/prisma');
+const env = require('../config/env');
 
 // Rate limiting itself is covered by rateLimiter.test.js. authRateLimiter is
 // shared (by IP) across register/login/google/forgot/reset-password, so
@@ -24,8 +25,17 @@ jest.mock('../config/prisma', () => ({
 }));
 
 describe('Authentication Routes - Register & Login', () => {
+  const originalNodeEnv = env.NODE_ENV;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    env.NODE_ENV = originalNodeEnv;
+    env.ALLOW_ADMIN_PASSWORD_LOGIN = false;
+  });
+
+  afterAll(() => {
+    env.NODE_ENV = originalNodeEnv;
+    env.ALLOW_ADMIN_PASSWORD_LOGIN = false;
   });
 
   describe('POST /auth/register', () => {
@@ -116,7 +126,7 @@ describe('Authentication Routes - Register & Login', () => {
       expect(res.body.error.message).toBe('Invalid email or password');
     });
 
-    it('should login successfully and return signed token and user info without password', async () => {
+    it('should login successfully with an HttpOnly session and no token in JSON', async () => {
       const { hashPassword } = require('../utils/hash');
       const hashedPassword = await hashPassword('correctpassword');
 
@@ -133,11 +143,145 @@ describe('Authentication Routes - Register & Login', () => {
         .send({ email: 'user@example.com', password: 'correctpassword' })
         .expect(200);
 
-      expect(res.body.token).toBeDefined();
+      expect(res.body.token).toBeUndefined();
       expect(res.body.user).toBeDefined();
       expect(res.body.user.id).toBe(3);
       expect(res.body.user.email).toBe('user@example.com');
       expect(res.body.user.password).toBeUndefined(); // Secure password check
+      const cookie = res.headers['set-cookie'][0];
+      expect(cookie).toContain('ocseafood_session=');
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('SameSite=Lax');
+      expect(cookie).not.toContain('Secure');
+      expect(cookie).not.toContain('Max-Age');
+    });
+
+    it('should issue a persistent session only when remember-me is selected', async () => {
+      const { hashPassword } = require('../utils/hash');
+      const hashedPassword = await hashPassword('correctpassword');
+      prisma.user.findUnique.mockResolvedValue({
+        id: 3,
+        email: 'user@example.com',
+        password: hashedPassword,
+        name: 'User',
+        role: 'CUSTOMER'
+      });
+
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ email: 'user@example.com', password: 'correctpassword', rememberMe: true })
+        .expect(200);
+
+      expect(res.headers['set-cookie'][0]).toContain('Max-Age=2592000');
+    });
+
+    it('should block ADMIN password login when the feature flag is disabled', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        email: 'admin@example.com',
+        password: 'hashed-password',
+        name: 'Admin',
+        role: 'ADMIN'
+      });
+
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ email: 'admin@example.com', password: 'correctpassword' })
+        .expect(403);
+
+      expect(res.body.error.message).toBe('Administrator accounts must sign in with Google.');
+    });
+
+    it('should block ADMIN password login even when the local testing flag is enabled', async () => {
+      env.ALLOW_ADMIN_PASSWORD_LOGIN = true;
+
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        email: 'admin@example.com',
+        password: 'hashed-password',
+        name: 'Admin',
+        role: 'ADMIN'
+      });
+
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ email: 'admin@example.com', password: 'correctpassword' })
+        .expect(403);
+
+      expect(res.body.error.message).toBe('Administrator accounts must sign in with Google.');
+    });
+
+    it('should always block ADMIN password login in production', async () => {
+      env.NODE_ENV = 'production';
+      env.ALLOW_ADMIN_PASSWORD_LOGIN = true;
+      prisma.user.findUnique.mockResolvedValue({
+        id: 1,
+        email: 'admin@example.com',
+        password: 'hashed-password',
+        name: 'Admin',
+        role: 'ADMIN'
+      });
+
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ email: 'admin@example.com', password: 'correctpassword' })
+        .expect(403);
+
+      expect(res.body.error.message).toBe('Administrator accounts must sign in with Google.');
+    });
+
+    it('should use a Secure __Host- cookie in production for customer login', async () => {
+      const { hashPassword } = require('../utils/hash');
+      const hashedPassword = await hashPassword('correctpassword');
+      env.NODE_ENV = 'production';
+      prisma.user.findUnique.mockResolvedValue({
+        id: 3,
+        email: 'user@example.com',
+        password: hashedPassword,
+        name: 'User',
+        role: 'CUSTOMER'
+      });
+
+      const res = await request(app)
+        .post('/auth/login')
+        .send({ email: 'user@example.com', password: 'correctpassword' })
+        .expect(200);
+
+      const cookie = res.headers['set-cookie'][0];
+      expect(cookie).toContain('__Host-ocseafood_session=');
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('Secure');
+      expect(cookie).toContain('Path=/');
+    });
+  });
+
+  describe('Browser session lifecycle', () => {
+    it('should restore the current user and clear the cookie on logout', async () => {
+      const { hashPassword } = require('../utils/hash');
+      const hashedPassword = await hashPassword('correctpassword');
+      const user = {
+        id: 3,
+        email: 'user@example.com',
+        password: hashedPassword,
+        name: 'User',
+        role: 'CUSTOMER'
+      };
+      prisma.user.findUnique.mockResolvedValue(user);
+
+      const agent = request.agent(app);
+      await agent
+        .post('/auth/login')
+        .send({ email: user.email, password: 'correctpassword' })
+        .expect(200);
+
+      const session = await agent.get('/auth/session').expect(200);
+      expect(session.body.user.email).toBe(user.email);
+      expect(session.body.user.password).toBeUndefined();
+      expect(session.headers['cache-control']).toBe('no-store');
+
+      const logout = await agent.post('/auth/logout').expect(204);
+      expect(logout.headers['set-cookie'][0]).toContain('ocseafood_session=;');
+      await agent.get('/auth/session').expect(401);
     });
   });
 });

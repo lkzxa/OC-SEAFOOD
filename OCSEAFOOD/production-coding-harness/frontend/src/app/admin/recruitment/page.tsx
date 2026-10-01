@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -36,11 +36,6 @@ export default function AdminRecruitmentPage() {
   const [form, setForm] = useState(emptyForm);
   const [requirementRows, setRequirementRows] = useState<string[]>([""]);
 
-  const editingJob = useMemo(
-    () => jobs.find((job) => job.id === editingId) || null,
-    [editingId, jobs]
-  );
-
   const loadData = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -59,25 +54,24 @@ export default function AdminRecruitmentPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!editingJob) {
-      setRequirementRows([""]);
-      return;
-    }
+  const startEditing = (job: JobOpening) => {
+    setEditingId(job.id);
     setForm({
-      title: editingJob.title,
-      quantity: String(editingJob.quantity),
-      salary: editingJob.salary,
-      location: editingJob.location,
-      description: editingJob.description,
-      isVisible: editingJob.isVisible,
+      title: job.title,
+      quantity: String(job.quantity),
+      salary: job.salary,
+      location: job.location,
+      description: job.description,
+      isVisible: job.isVisible,
     });
-    setRequirementRows(editingJob.requirements.length > 0 ? editingJob.requirements : [""]);
-  }, [editingJob]);
+    setRequirementRows(job.requirements.length > 0 ? job.requirements : [""]);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -324,7 +318,7 @@ export default function AdminRecruitmentPage() {
             <button
               type="submit"
               disabled={saving || loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
+              className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
             >
               {saving ? "Đang lưu..." : editingId ? "Cập nhật tin tuyển dụng" : "Tạo tin tuyển dụng"}
             </button>
@@ -373,11 +367,7 @@ export default function AdminRecruitmentPage() {
                       <td className="py-3 px-4 text-right space-x-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingId(job.id);
-                            setErrorMsg(null);
-                            setSuccessMsg(null);
-                          }}
+                          onClick={() => startEditing(job)}
                           className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer"
                         >
                           Sửa

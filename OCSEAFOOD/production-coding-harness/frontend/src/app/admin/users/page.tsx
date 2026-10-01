@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { getAuthHeaders, unwrapCollection } from "@/components/admin/adminApi";
@@ -53,11 +53,6 @@ export default function AdminUsersPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const editingUser = useMemo(
-    () => users.find((u) => u.id === editingId) || null,
-    [users, editingId]
-  );
-
   const loadUsers = async (page = pagination.page, searchVal = appliedSearch, roleVal = appliedRoleFilter) => {
     setLoading(true);
     setErrorMsg(null);
@@ -96,19 +91,21 @@ export default function AdminUsersPage() {
   };
 
   useEffect(() => {
-    loadUsers(1, "", "");
+    void Promise.resolve().then(() => loadUsers(1, "", ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!editingUser) return;
+  const startEditing = (selectedUser: UserItem) => {
+    setEditingId(selectedUser.id);
     setForm({
-      email: editingUser.email,
-      name: editingUser.name,
+      email: selectedUser.email,
+      name: selectedUser.name,
       password: "", // Always start with empty password when editing
-      role: editingUser.role,
+      role: selectedUser.role,
     });
-  }, [editingUser]);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -297,7 +294,7 @@ export default function AdminUsersPage() {
 
           <button
             type="submit"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl text-sm cursor-pointer"
+            className="bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold px-5 py-3 rounded-xl text-sm cursor-pointer"
           >
             Áp dụng bộ lọc
           </button>
@@ -377,7 +374,7 @@ export default function AdminUsersPage() {
             <button
               type="submit"
               disabled={saving || loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
+              className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl disabled:opacity-50 transition-colors cursor-pointer text-sm"
             >
               {saving ? "Đang lưu..." : editingId ? "Cập nhật tài khoản" : "Tạo tài khoản"}
             </button>
@@ -426,11 +423,7 @@ export default function AdminUsersPage() {
                       <td className="py-4 px-4 text-right space-x-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingId(u.id);
-                            setErrorMsg(null);
-                            setSuccessMsg(null);
-                          }}
+                          onClick={() => startEditing(u)}
                           className="bg-navy-800 hover:bg-navy-700 text-slate-200 text-xs font-bold uppercase tracking-widest px-3 py-2 rounded-lg cursor-pointer"
                         >
                           Sửa

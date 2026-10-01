@@ -1,7 +1,8 @@
 const { z } = require('zod');
+const { ORDER_STATUSES } = require('../constants/orderStatus');
 
 const OrderUpdateSchema = z.object({
-  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED']).optional(),
+  status: z.enum(ORDER_STATUSES).optional(),
   note: z.string().optional(),
   totalFinal: z.number().positive('Total final must be positive').optional(),
   items: z.array(

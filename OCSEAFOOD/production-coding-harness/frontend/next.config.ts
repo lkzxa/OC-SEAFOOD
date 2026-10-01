@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+    ],
+  },
   async rewrites() {
-    // BACKEND_URL: server-side env var (set in Vercel Dashboard or .env.local)
-    // Falls back to localhost:5000 for local development
+    // Server-only URL. Browser requests stay same-origin through /api and /uploads.
     const backendUrl = process.env.BACKEND_URL || "http://localhost:5000";
     return [
       {

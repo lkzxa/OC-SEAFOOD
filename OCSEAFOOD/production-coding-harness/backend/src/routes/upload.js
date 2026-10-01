@@ -1,59 +1,75 @@
-const express = require("express");
-const multer = require("multer");
-const auth = require("../middleware/auth");
-const authorize = require("../middleware/authorize");
-const { uploadBuffer } = require("../config/cloudinary");
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const multer = require('multer');
+const auth = require('../middleware/auth');
+const authorize = require('../middleware/authorize');
+const { uploadBuffer } = require('../config/cloudinary');
+const { validateMediaConfiguration } = require('../config/media');
 
 const router = express.Router();
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
-// Xác minh magic bytes thật của file thay vì chỉ tin vào mimetype client gửi lên
-// (mimetype có thể bị giả mạo dễ dàng). Chỉ chấp nhận các định dạng ảnh phổ biến.
-function isValidImageBuffer(buffer) {
-  if (!buffer || buffer.length < 12) return false;
-
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (buffer.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return true;
-  // JPEG: FF D8 FF
-  if (buffer.slice(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) return true;
-  // GIF: "GIF8"
-  if (buffer.slice(0, 4).toString('ascii') === 'GIF8') return true;
-  // WebP: "RIFF"....."WEBP"
-  if (buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP') return true;
-
-  return false;
-}
-
-// Ảnh được giữ trong bộ nhớ rồi upload thẳng lên Cloudinary, không ghi ra đĩa local
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // Giới hạn 5MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
-      cb(null, true);
-    } else {
-      cb(new Error("Chỉ hỗ trợ upload file ảnh."));
+  limits: { fileSize: MAX_IMAGE_SIZE, files: 1 },
+  fileFilter: (req, file, callback) => {
+    if (!file.mimetype.startsWith('image/')) {
+      const error = new Error('Only image files are allowed.');
+      error.status = 400;
+      return callback(error);
     }
-  }
+    callback(null, true);
+  },
 });
 
-// Route xử lý upload - chỉ Admin mới được phép upload
-router.post("/", auth, authorize('ADMIN'), upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: { message: "Không tìm thấy file upload." } });
-    }
+function detectImageExtension(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpg';
+  if (buffer.subarray(0, 6).toString('ascii') === 'GIF87a' || buffer.subarray(0, 6).toString('ascii') === 'GIF89a') return 'gif';
+  if (buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  return null;
+}
 
-    if (!isValidImageBuffer(req.file.buffer)) {
-      return res.status(400).json({ error: { message: "File không phải ảnh hợp lệ (định dạng không được hỗ trợ)." } });
-    }
-
-    const result = await uploadBuffer(req.file.buffer, "ocseafood/uploads");
-
-    res.status(200).json({ url: result.secure_url });
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ error: { message: "Lỗi server khi upload file." } });
+async function saveLocalImage(buffer, mediaRoot) {
+  const extension = detectImageExtension(buffer);
+  if (!extension) {
+    const error = new Error('The uploaded file is not a supported PNG, JPEG, GIF, or WebP image.');
+    error.status = 400;
+    throw error;
   }
+
+  const filename = `${crypto.randomBytes(16).toString('hex')}.${extension}`;
+  await fs.promises.writeFile(path.join(mediaRoot, filename), buffer, { flag: 'wx' });
+  return `/uploads/${filename}`;
+}
+
+router.post('/', auth, authorize('ADMIN'), (req, res, next) => {
+  upload.single('image')(req, res, async (uploadError) => {
+    if (uploadError) {
+      if (uploadError.code === 'LIMIT_FILE_SIZE') uploadError.status = 413;
+      return next(uploadError);
+    }
+    if (!req.file) {
+      const error = new Error('Image file is required.');
+      error.status = 400;
+      return next(error);
+    }
+
+    try {
+      const { mediaRoot, provider } = validateMediaConfiguration();
+      const url = provider === 'cloudinary'
+        ? (await uploadBuffer(req.file.buffer, 'ocseafood')).secure_url
+        : await saveLocalImage(req.file.buffer, mediaRoot);
+      res.status(201).json({ url });
+    } catch (error) {
+      next(error);
+    }
+  });
 });
 
 module.exports = router;
+module.exports.detectImageExtension = detectImageExtension;
+module.exports.saveLocalImage = saveLocalImage;

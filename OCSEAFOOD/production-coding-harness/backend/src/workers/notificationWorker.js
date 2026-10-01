@@ -4,15 +4,17 @@ const net = require('net');
 const dns = require('dns');
 const prisma = require('../config/prisma');
 const env = require('../config/env');
+const logger = require('../utils/logger');
 
 let intervalId = null;
 let isProcessing = false;
+let activeTickPromise = null;
 
 /**
  * Resolves a hostname to its IPv4 address. nodemailer picks IPv4 vs IPv6 based on
- * which address families the local machine's network interfaces report — inside
- * Render's containers this misdetects IPv6 as usable (ENETUNREACH, no outbound
- * IPv6 route) while skipping IPv4 entirely. Resolving to IPv4 ourselves and
+ * which address families the local machine's network interfaces report. Some
+ * container networks report IPv6 without providing an outbound IPv6 route.
+ * Resolving to IPv4 ourselves and
  * passing the literal IP bypasses that broken detection (nodemailer skips its own
  * DNS logic whenever `host` is already an IP).
  */
@@ -35,16 +37,10 @@ async function createMailTransporter(smtpSettings) {
   const { host, port, user, pass, secure } = smtpSettings || {};
 
   if (!host || !user || !pass) {
-    console.warn('⚠️ SMTP credentials not fully configured. Email notifications will be printed to console.');
+    logger.warn('smtp_not_configured');
     return {
       sendMail: async (mailOptions) => {
-        console.log(`[MOCK EMAIL SENT]
-From: ${mailOptions.from}
-To: ${mailOptions.to}
-Subject: ${mailOptions.subject}
-Content:
-${mailOptions.text || mailOptions.html}
-`);
+        logger.info('email_delivery_skipped', { reason: 'smtp_not_configured' });
         return { messageId: 'mock-email-id-' + Date.now() };
       }
     };
@@ -79,8 +75,7 @@ ${mailOptions.text || mailOptions.html}
  */
 function sendTelegramMessage(token, chatId, text) {
   if (!token || !chatId) {
-    console.warn('⚠️ Telegram bot credentials not fully configured. Telegram notifications will be printed to console.');
-    console.log(`[MOCK TELEGRAM SENT] ChatID: ${chatId}, Message: ${text}`);
+    logger.warn('telegram_not_configured');
     return Promise.resolve({ ok: true });
   }
 
@@ -135,8 +130,7 @@ function sendTelegramMessage(token, chatId, text) {
  */
 function sendZaloMessage(accessToken, userId, text) {
   if (!accessToken || !userId) {
-    console.warn('⚠️ Zalo credentials not fully configured. Zalo notifications will be printed to console.');
-    console.log(`[MOCK ZALO SENT] UserID: ${userId}, Message: ${text}`);
+    logger.warn('zalo_not_configured');
     return Promise.resolve({ ok: true });
   }
 
@@ -205,6 +199,10 @@ async function processOutbox() {
 
   const telegramToken = settingsMap['TELEGRAM_BOT_TOKEN'] || env.TELEGRAM_BOT_TOKEN;
   const telegramChatId = settingsMap['TELEGRAM_CHAT_ID'] || env.TELEGRAM_CHAT_ID;
+  const recruitmentTelegramToken =
+    settingsMap['RECRUITMENT_TELEGRAM_BOT_TOKEN'] || env.RECRUITMENT_TELEGRAM_BOT_TOKEN;
+  const recruitmentTelegramChatId =
+    settingsMap['RECRUITMENT_TELEGRAM_CHAT_ID'] || env.RECRUITMENT_TELEGRAM_CHAT_ID;
   const zaloAccessToken = settingsMap['ZALO_OA_ACCESS_TOKEN'] || env.ZALO_OA_ACCESS_TOKEN;
   const zaloUserId = settingsMap['ZALO_USER_ID'] || env.ZALO_USER_ID;
   const smtpSettings = {
@@ -229,12 +227,7 @@ async function processOutbox() {
       }
     });
   } catch (err) {
-    // Ghi log chi tiết lỗi thay vì chỉ hiện dòng thông báo chung chung
-    console.error('❌ Notification worker: Database query failed!');
-    console.error('Chi tiết lỗi:', err.message);
-
-    // Nếu bạn muốn biết thêm về code lỗi (ví dụ: P1001 là lỗi không kết nối được server)
-    if (err.code) console.error('Mã lỗi Prisma:', err.code);
+    logger.error('notification_worker_database_query_failed', { error: err });
     return;
   }
 
@@ -273,11 +266,11 @@ async function processOutbox() {
       } else if (record.type === 'TELEGRAM') {
         const payload = record.payload;
         const isRecruitment = payload.isRecruitment === true;
-        const targetToken = (isRecruitment && settingsMap['RECRUITMENT_TELEGRAM_BOT_TOKEN'])
-          ? settingsMap['RECRUITMENT_TELEGRAM_BOT_TOKEN']
+        const targetToken = isRecruitment
+          ? recruitmentTelegramToken || telegramToken
           : telegramToken;
-        const targetChatId = (isRecruitment && settingsMap['RECRUITMENT_TELEGRAM_CHAT_ID'])
-          ? settingsMap['RECRUITMENT_TELEGRAM_CHAT_ID']
+        const targetChatId = isRecruitment
+          ? recruitmentTelegramChatId || telegramChatId
           : telegramChatId;
         await sendTelegramMessage(targetToken, targetChatId, payload.message);
       } else if (record.type === 'ZALO') {
@@ -319,16 +312,16 @@ async function processOutbox() {
 /**
  * Worker execution wrapper enforcing non-concurrency inside ticks.
  */
-async function runTick() {
-  if (isProcessing) return;
+function runTick() {
+  if (isProcessing) return activeTickPromise;
   isProcessing = true;
-  try {
-    await processOutbox();
-  } catch (err) {
-    console.error('❌ Error in notification worker outbox processing tick:', err);
-  } finally {
-    isProcessing = false;
-  }
+  activeTickPromise = processOutbox()
+    .catch((err) => logger.error('notification_worker_tick_failed', { error: err }))
+    .finally(() => {
+      isProcessing = false;
+      activeTickPromise = null;
+    });
+  return activeTickPromise;
 }
 
 /**
@@ -342,21 +335,22 @@ function startNotificationWorker() {
   const intervalMs = env.NOTIFICATION_WORKER_INTERVAL_MS;
   if (!intervalId) {
     // Run an initial tick synchronously, then start interval
-    runTick();
+    void runTick();
     intervalId = setInterval(runTick, intervalMs);
-    console.log(`🚀 Notification outbox worker started. Polling interval: ${intervalMs}ms`);
+    logger.info('notification_worker_started', { intervalMs });
   }
 }
 
 /**
  * Stop the background poller daemon.
  */
-function stopNotificationWorker() {
+async function stopNotificationWorker() {
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
-    console.log('⏹️ Notification outbox worker stopped.');
   }
+  if (activeTickPromise) await activeTickPromise;
+  logger.info('notification_worker_stopped');
 }
 
 module.exports = {

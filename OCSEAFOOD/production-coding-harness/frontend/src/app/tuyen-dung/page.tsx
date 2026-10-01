@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import RelatedPostsSection from "@/components/RelatedPostsSection";
+import LoadingState from "@/components/LoadingState";
+import StatusPanel from "@/components/StatusPanel";
 
 interface JobOpening {
   id: number;
@@ -13,68 +16,39 @@ interface JobOpening {
   requirements: string[];
 }
 
-// Used only if the API is unreachable, so the page never renders empty
-const FALLBACK_JOB_OPENINGS: JobOpening[] = [
-  {
-    id: 1,
-    title: "Nhân viên Tư vấn bán hàng (Online / Showroom)",
-    quantity: 3,
-    salary: "8.000.000 - 15.000.000 VND (Lương cứng + Hoa hồng)",
-    location: "10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh",
-    description: "Tư vấn, chăm sóc khách hàng trực tuyến, chốt đơn hải sản trên website, Zalo OA và Fanpage chính thức của OCSEAFOOD.",
-    requirements: [
-      "Có kỹ năng giao tiếp tốt, giọng nói dễ nghe, nhẹ nhàng.",
-      "Ưu tiên ứng viên có kinh nghiệm tư vấn bán hàng online hoặc ngành F&B.",
-      "Nhanh nhẹn, trung thực, có tinh thần trách nhiệm cao."
-    ]
-  },
-  {
-    id: 2,
-    title: "Nhân viên Sơ chế & Chế biến hải sản",
-    quantity: 2,
-    salary: "9.000.000 - 12.000.000 VND (Hỗ trợ cơm trưa)",
-    location: "10 Đ. Số 7, Hạnh Thông, Hồ Chí Minh",
-    description: "Thực hiện sơ chế các loại cua, tôm hùm, cá tươi sống theo yêu cầu của khách hàng và chế biến sashimi chuẩn Nhật dưới sự hướng dẫn của Bếp trưởng.",
-    requirements: [
-      "Có kinh nghiệm sơ chế hoặc chế biến hải sản tươi sống từ 1 năm trở lên.",
-      "Nắm vững các nguyên tắc vệ sinh an toàn thực phẩm.",
-      "Chịu khó, tỉ mỉ, có khả năng làm việc dưới áp lực cao."
-    ]
-  },
-  {
-    id: 3,
-    title: "Nhân viên Giao hàng siêu tốc (Shipper)",
-    quantity: 5,
-    salary: "10.000.000 - 14.000.000 VND (Hỗ trợ xăng xe)",
-    location: "Khu vực nội thành TP. Hồ Chí Minh",
-    description: "Vận chuyển hải sản tươi sống bằng thùng giữ nhiệt lạnh chuyên dụng của cửa hàng đến tận tay khách hàng trong vòng 1-2 giờ.",
-    requirements: [
-      "Có xe máy cá nhân và điện thoại thông minh.",
-      "Thông thạo đường phố khu vực TP. Hồ Chí Minh.",
-      "Thái độ phục vụ khách hàng lịch sự, thân thiện, cẩn thận."
-    ]
-  }
-];
-
 export default function RecruitmentPage() {
   const [jobOpenings, setJobOpenings] = useState<JobOpening[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState(false);
+  const [jobsRequestVersion, setJobsRequestVersion] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
+    void Promise.resolve().then(() => {
+      if (isMounted) {
+        setJobsLoading(true);
+        setJobsError(false);
+      }
+    });
     fetch("/api/job-openings")
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((json) => {
         if (!isMounted) return;
         const data: JobOpening[] = Array.isArray(json) ? json : (json.data ?? []);
-        setJobOpenings(data.length > 0 ? data : FALLBACK_JOB_OPENINGS);
+        setJobOpenings(data);
+        setJobsLoading(false);
       })
       .catch(() => {
-        if (isMounted) setJobOpenings(FALLBACK_JOB_OPENINGS);
+        if (isMounted) {
+          setJobOpenings([]);
+          setJobsError(true);
+          setJobsLoading(false);
+        }
       });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [jobsRequestVersion]);
 
   // Application Form States
   const [fullName, setFullName] = useState("");
@@ -163,7 +137,7 @@ export default function RecruitmentPage() {
             <div className="flex flex-wrap gap-4 pt-2">
               <a
                 href="#jobs"
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs uppercase px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/20"
+                className="bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold text-xs uppercase px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/20"
               >
                 Xem vị trí tuyển dụng
               </a>
@@ -175,10 +149,12 @@ export default function RecruitmentPage() {
               </a>
             </div>
           </div>
-          <div className="aspect-video lg:aspect-[4/3] rounded-xl overflow-hidden border border-navy-700 shadow-inner">
-            <img
+          <div className="relative aspect-video lg:aspect-[4/3] rounded-xl overflow-hidden border border-navy-700 shadow-inner">
+            <Image
               alt="OCSEAFOOD Recruitment Banner"
-              className="w-full h-full object-cover select-none"
+              className="object-cover select-none"
+              fill
+              sizes="(max-width: 1023px) 100vw, 50vw"
               src="/recruitment_banner.png"
             />
           </div>
@@ -243,7 +219,30 @@ export default function RecruitmentPage() {
         </div>
 
         <div className="space-y-6">
-          {jobOpenings.map((job) => (
+          {jobsError ? (
+            <StatusPanel
+              announce="assertive"
+              compact
+              description="Không thể tải danh sách tuyển dụng mới nhất. Vui lòng thử lại trước khi chọn vị trí."
+              eyebrow="Dịch vụ tạm thời gián đoạn"
+              icon="cloud_off"
+              onPrimaryAction={() => setJobsRequestVersion((value) => value + 1)}
+              primaryLabel="Thử tải lại"
+              title="Chưa thể tải vị trí tuyển dụng"
+            />
+          ) : jobsLoading ? (
+            <LoadingState compact label="Đang tải vị trí tuyển dụng..." />
+          ) : jobOpenings.length === 0 ? (
+            <StatusPanel
+              compact
+              description="Hiện chưa có vị trí tuyển dụng đang mở. Bạn vẫn có thể gửi hồ sơ tự do bên dưới."
+              eyebrow="Cơ hội nghề nghiệp"
+              icon="work_history"
+              primaryHref="#apply"
+              primaryLabel="Gửi hồ sơ tự do"
+              title="Chưa có vị trí đang tuyển"
+            />
+          ) : jobOpenings.map((job) => (
             <div
               key={job.id}
               className="bg-navy-800 border border-navy-700 rounded-xl p-6 md:p-8 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center hover:border-orange-500/20 transition-all"
@@ -436,7 +435,7 @@ export default function RecruitmentPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/50 text-white font-black text-xs uppercase py-4 rounded-xl transition-colors tracking-widest shadow-lg shadow-orange-500/20 cursor-pointer"
+                className="w-full bg-orange-500 hover:bg-orange-400 disabled:bg-orange-500/50 text-navy-950 font-black text-xs uppercase py-4 rounded-xl transition-colors tracking-widest shadow-lg shadow-orange-500/20 cursor-pointer"
               >
                 {loading ? "Đang gửi hồ sơ..." : "Nộp Hồ Sơ Ứng Tuyển"}
               </button>

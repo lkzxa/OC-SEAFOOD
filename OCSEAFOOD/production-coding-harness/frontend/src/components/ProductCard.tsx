@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
 import { useState, useCallback } from "react";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import { OFFICIAL_PHONE_TEL } from "@/constants/contact";
 
 interface ProductCardProps {
+  headingLevel?: "h2" | "h3";
   product: {
     id: number;
     name: string;
@@ -18,7 +21,7 @@ interface ProductCardProps {
   };
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, headingLevel = "h3" }: ProductCardProps) {
   const { addItem } = useCart();
   
   // Animation states
@@ -28,6 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const priceVal = product.priceReference ? Number(product.priceReference) : null;
   // BUG-005 fix: treat priceReference=0 same as null (must contact for pricing)
   const isContact = product.showContact || priceVal === null || priceVal <= 0;
+  const Heading = headingLevel;
 
   // Format currency without decimals (VND)
   const formatPrice = (price: number) => {
@@ -69,32 +73,33 @@ export default function ProductCard({ product }: ProductCardProps) {
   }, [addItem, isContact, priceVal, product]);
 
   return (
-    <div className="bg-gradient-to-br from-red-500 via-orange-500 to-amber-500 rounded-lg overflow-hidden border border-amber-400/40 hover:border-yellow-300 hover:shadow-[0_12px_40px_rgba(239,68,68,0.35)] hover:-translate-y-1 transition-all duration-300 flex flex-col group holographic-card">
+    <div className="rounded-xl overflow-hidden border border-amber-400/70 bg-orange-500 hover:border-amber-300 hover:shadow-[0_16px_45px_rgba(249,115,22,0.28)] hover:-translate-y-1 transition-all duration-300 flex flex-col group holographic-card">
       <Link href={`/product/${product.slug}`} className="aspect-square relative overflow-hidden bg-navy-900 block">
-        <img
+        <Image
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
-          src={optimizeImageUrl(product.image ? product.image.split(",")[0].trim() : "", 600) || "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500"}
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          fill
+          sizes="(max-width: 767px) 50vw, 25vw"
+          src={optimizeImageUrl(product.image ? product.image.split(",")[0].trim() : "", 600) || "/media-placeholder.svg"}
           onError={(e) => {
-            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1551248429-40975aa4de74?w=500";
+            (e.target as HTMLImageElement).src = "/media-placeholder.svg";
           }}
         />
-        <span className="absolute top-2 left-2 bg-red-600 text-[10px] font-black px-2 py-1 uppercase rounded-sm z-20">
+        <span className="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-black px-3 py-1 uppercase rounded-full z-20 shadow-lg">
           {product.badgeText || (isContact ? "Đặt hàng" : "Hàng sống")}
         </span>
       </Link>
-      <div className="p-4 flex flex-col flex-1 relative">
+      <div className="bg-gradient-to-br from-orange-500 via-orange-500 to-amber-400 p-4 flex flex-col flex-1 relative">
         <Link href={`/product/${product.slug}`}>
-          <h3 className="text-sm md:text-base font-extrabold line-clamp-2 mb-2 min-h-[40px] text-white group-hover:text-amber-100 transition-colors drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.3)]">
+          <Heading className="text-sm md:text-base font-extrabold line-clamp-2 mb-2 min-h-[40px] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-colors">
             {product.name}
-          </h3>
+          </Heading>
         </Link>
-        <div className="space-y-1 mb-4 text-[11px] text-amber-100">
+        <div className="space-y-1 mb-4 text-[11px] text-white/90">
           <p className="uppercase">Quy cách: <span className="text-white font-bold">{product.unit}</span></p>
         </div>
         <div className="mt-auto relative">
-          <p className="text-xl md:text-2xl font-black text-yellow-300 mb-3 drop-shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
+          <p className="text-xl md:text-2xl font-black text-yellow-300 mb-3 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">
             {isContact ? "Liên hệ" : formatPrice(priceVal)}
           </p>
           {!isContact ? (
@@ -104,7 +109,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 className={`w-full font-extrabold py-2.5 text-xs uppercase tracking-widest transition-all duration-300 rounded cursor-pointer active:scale-[0.97] flex items-center justify-center gap-1 ${
                   isAdded 
                     ? "bg-green-600 text-white hover:bg-green-700 shadow-[0_0_15px_rgba(22,163,74,0.4)]" 
-                    : "bg-white text-red-600 hover:bg-amber-50 hover:text-red-700 shadow-[0_4px_15px_rgba(0,0,0,0.15)]"
+                    : "bg-white text-red-600 hover:bg-amber-50 hover:text-red-700 shadow-[0_6px_18px_rgba(0,0,0,0.18)]"
                 }`}
               >
                 {isAdded ? (
@@ -130,8 +135,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           ) : (
             <a
-              href="tel:0908464818"
-              className="w-full block text-center bg-slate-950 hover:bg-slate-900 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors rounded shadow-sm border border-white/10"
+              href={OFFICIAL_PHONE_TEL}
+              className="w-full block text-center bg-white hover:bg-amber-50 text-red-600 font-black py-2.5 text-xs uppercase tracking-widest transition-colors rounded shadow-[0_6px_18px_rgba(0,0,0,0.18)]"
             >
               Gọi tư vấn
             </a>

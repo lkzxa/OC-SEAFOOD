@@ -1,175 +1,51 @@
-# Production Coding/Testing Harness
+# OCSEAFOOD
 
-A reusable Markdown-based harness for controlling AI coding agents such as Codex, Claude Code, Cursor, or similar tools.
+OCSEAFOOD là monorepo gồm giao diện Next.js và API Express dùng Prisma/PostgreSQL. Website cung cấp danh mục hải sản, combo, bài viết, giỏ hàng, yêu cầu tư vấn đặt hàng, tài khoản khách hàng và trang quản trị.
 
-The goal is not to make AI code faster at any cost.
+## Cấu trúc
 
-The goal is:
+- `frontend/`: Next.js, React, Tailwind CSS.
+- `backend/`: Express, Prisma, PostgreSQL và notification worker.
+- `docs/`: hướng dẫn setup, vận hành, media và chuẩn bị deployment.
+- `input/`, `.harness/`: kế hoạch và bằng chứng kiểm thử theo từng task.
 
-* keep tasks small
-* keep scope controlled
-* require tests
-* require build/test evidence
-* force safe fix loops
-* reduce random AI refactors
-* make coding work reviewable for real production projects
-* reduce hidden bugs before code reaches real users
-* make security, reliability, and maintainability visible in every task
+## Bắt đầu nhanh trên Windows
 
-## Folder Structure
+Yêu cầu Node.js `>=20.9.0`, npm và PostgreSQL 18.
 
-```text
-input/
-├── project-brief.md
-├── initial-task-list.md
-├── current-task.md
-└── project-commands.md
-
-.harness/
-├── AGENTS.md
-├── rules.md
-├── task.md
-├── risk.md
-├── test-plan.md
-├── commands.md
-├── test-matrix.md
-├── result.md
-├── fix-loop.md
-└── decisions.md
-
-prompts/
-├── 00-generate-initial-task-list.md
-├── 01-generate-harness.md
-├── 02-run-task.md
-├── 03-fix-loop.md
-└── 04-review-result.md
+```powershell
+npm ci
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.example frontend/.env.local
+npm run prisma:generate --workspace=backend
+npm run prisma:migrate --workspace=backend
+npm run dev
 ```
 
-## Basic Workflow
+Cần sửa `backend/.env` và `frontend/.env.local` trước khi migrate/chạy ứng dụng. Hướng dẫn đầy đủ nằm tại [docs/windows-setup.md](docs/windows-setup.md).
 
-### For a new project
+- Frontend: http://localhost:3000
+- Backend readiness: http://localhost:5000/health/ready
+- Admin: http://localhost:3000/admin
 
-```text
-project-brief.md
-→ generate initial-task-list.md
-→ choose one task
-→ write current-task.md
-→ generate .harness/
-→ Codex runs task
-→ build/test/fix
-→ update result
-→ commit
+## Các lệnh kiểm tra
+
+```powershell
+npm test
+npm run lint
+npm run build
+npm run prisma:validate --workspace=backend
 ```
 
-### For an existing project
+Backend là JavaScript chạy trực tiếp nên bước build/lint backend thực hiện syntax gate. Frontend thực hiện ESLint và production build Next.js.
 
-```text
-project-brief.md
-→ current-task.md
-→ project-commands.md
-→ generate .harness/
-→ Codex runs task
-→ build/test/fix
-→ update result
-→ commit
-```
+## Tài liệu
 
-## Important Rule
+- [Hướng dẫn người dùng](WEBSITE_USER_GUIDE.md)
+- [Setup máy Windows mới](docs/windows-setup.md)
+- [Chuẩn bị deployment](docs/pre-deployment.md)
+- [Vận hành backend](docs/backend-operations.md)
+- [Lưu trữ và backup ảnh](docs/media-storage.md)
+- [Danh sách lệnh dự án](input/project-commands.md)
 
-One harness run should control one task only.
-
-Do not ask the AI coding agent to build a whole product in one run.
-
-If the task is too large, split it into smaller tasks before generating `.harness/`.
-
-## Production Gates
-
-A task is not considered complete just because the code runs.
-
-Each task must provide evidence for:
-
-* install result where applicable
-* build result where applicable
-* test result where applicable
-* lint result where applicable
-* changed files
-* tests added or updated
-* risks introduced
-* limitations
-* manual verification steps if automation is not possible
-
-The AI coding agent must not claim completion without command evidence.
-
-## Security Gates
-
-The AI coding agent must not:
-
-* hardcode secrets
-* commit `.env`
-* print real environment values
-* bypass authentication checks
-* bypass authorization checks
-* trust client-submitted price, role, subtotal, discount, or total
-* log raw customer personal data
-* log passwords, tokens, full addresses, or raw request bodies
-* run destructive database commands without explicit task permission
-* silently weaken validation to make tests pass
-
-For customer-facing applications, every task that touches backend input must consider:
-
-* input validation
-* authentication
-* authorization
-* rate limiting
-* error handling
-* sensitive data exposure
-* database integrity
-
-## Performance & Load Gates
-
-For customer-facing APIs, especially checkout, lead submission, login, and registration:
-
-* validate input before business logic
-* add rate limiting where abuse is likely
-* use pagination for list APIs
-* avoid loading unbounded data
-* avoid synchronous dependency on Email or Telegram providers
-* prefer outbox or queue pattern for notifications
-* keep external integration failure isolated from core database writes
-
-## Fix Loop Rule
-
-When a build or test fails, the AI coding agent must:
-
-1. identify the failing command
-2. explain the likely root cause
-3. make the smallest safe fix
-4. rerun the failed command
-5. update the result file with evidence
-
-The AI coding agent must not rewrite unrelated modules to fix a local failure.
-
-## Scope Control Rule
-
-The AI coding agent must only edit files allowed by `current-task.md`.
-
-If a needed file is outside Allowed Scope, the agent must stop and report the issue instead of editing it.
-
-## Review Rule
-
-Before accepting a task result, review:
-
-* whether the task stayed inside scope
-* whether tests are meaningful
-* whether build/lint/test evidence exists
-* whether security was weakened
-* whether hidden risks remain
-* whether the next task should be adjusted
-
-## Recommended Usage
-
-Use this harness for real projects where code quality matters.
-
-Do not use it as a magic prompt to generate an entire product.
-
-The harness is only useful if each task is small, testable, and reviewable.
+Production chưa được triển khai trong task này. VPS, Nginx, HTTPS, firewall và process manager thuộc TASK-0071 trở đi.

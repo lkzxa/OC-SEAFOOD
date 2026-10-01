@@ -5,9 +5,10 @@ const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 const { validateBody } = require('../middleware/validate');
 const { OrderUpdateSchema } = require('../validation/order');
+const { isOrderStatus } = require('../constants/orderStatus');
 
-// GET /orders - Admin only list (paginated & filtered)
-router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
+// GET /orders - Admin list or the authenticated customer's own history
+router.get('/', auth, async (req, res, next) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const pageSize = parseInt(req.query.pageSize, 10) || 20;
@@ -16,16 +17,20 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
     }
     const skip = (page - 1) * pageSize;
 
-    const where = {};
-    // BUG-H02 fix: Validate status enum to prevent invalid Prisma query
-    const VALID_STATUSES = ['PENDING', 'CONFIRMED', 'CANCELLED'];
-    if (req.query.status && VALID_STATUSES.includes(req.query.status)) {
+    const isAdmin = req.user.role === 'ADMIN';
+    const where = isAdmin ? {} : { userId: req.user.id };
+    if (req.query.status) {
+      if (!isOrderStatus(req.query.status)) {
+        return res.status(400).json({
+          error: { message: 'Invalid order status', status: 400 }
+        });
+      }
       where.status = req.query.status;
     }
-    if (req.query.phone) {
+    if (isAdmin && req.query.phone) {
       where.phone = { contains: req.query.phone };
     }
-    if (req.query.email) {
+    if (isAdmin && req.query.email) {
       where.email = { contains: req.query.email };
     }
 

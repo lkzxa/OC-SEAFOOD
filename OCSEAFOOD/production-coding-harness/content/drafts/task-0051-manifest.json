@@ -1,0 +1,121 @@
+{
+  "task": "TASK-0051",
+  "status": "draft",
+  "createdAt": "2026-09-11",
+  "language": "vi-VN",
+  "sourceBrief": "docs/editorial-seo-brief.md",
+  "publicationPolicy": "Do not publish or insert into PostgreSQL before TASK-0053 editorial and image QA.",
+  "liveBaseline": {
+    "existingPostCount": 2,
+    "productCount": 28,
+    "categoryCount": 5
+  },
+  "articles": [
+    {
+      "order": 1,
+      "file": "content/drafts/01-cach-bao-quan-hai-san-tuoi-song.md",
+      "title": "Cách bảo quản hải sản tươi sống sau khi mua",
+      "slug": "cach-bao-quan-hai-san-tuoi-song",
+      "primaryKeyword": "cách bảo quản hải sản tươi sống",
+      "searchIntent": "Thông tin sau mua",
+      "wordCount": 1491,
+      "excerptLength": 105,
+      "metaTitle": "Cách bảo quản hải sản tươi sống an toàn | OCSEAFOOD",
+      "metaTitleLength": 51,
+      "metaDescription": "Hướng dẫn làm lạnh, đóng gói và bảo quản hải sản tươi sống sau khi mua, kèm dấu hiệu cần bỏ và cách tránh lây nhiễm chéo.",
+      "metaDescriptionLength": 121,
+      "imageAlt": "Hải sản tươi được chia hộp và bảo quản trong ngăn mát sạch",
+      "cta": "Xem thực đơn và hỏi tình trạng hàng trước khi mua.",
+      "internalLinks": [
+        "/category/cua-ghe",
+        "/category/tom",
+        "/category/so-oc",
+        "/menu"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling",
+        "https://www.foodsafety.gov/blog/salmonella-and-food"
+      ]
+    },
+    {
+      "order": 2,
+      "file": "content/drafts/02-cach-ra-dong-hai-san-dung-cach.md",
+      "title": "Cách rã đông hải sản đúng để giữ độ ngọt và kết cấu",
+      "slug": "cach-ra-dong-hai-san-dung-cach",
+      "primaryKeyword": "cách rã đông hải sản đúng cách",
+      "searchIntent": "Hướng dẫn xử lý hải sản đông lạnh",
+      "wordCount": 1423,
+      "excerptLength": 111,
+      "metaTitle": "Cách rã đông hải sản đúng cách | OCSEAFOOD",
+      "metaTitleLength": 42,
+      "metaDescription": "Ba cách rã đông hải sản an toàn bằng ngăn mát, nước lạnh hoặc lò vi sóng, giúp hạn chế mất nước và tránh để thực phẩm ở nhiệt độ phòng.",
+      "metaDescriptionLength": 135,
+      "imageAlt": "Gói hải sản đông lạnh đặt trong khay ngăn mát để rã đông",
+      "cta": "Xem sản phẩm đông lạnh và xác nhận hướng dẫn trên nhãn.",
+      "internalLinks": [
+        "/product/bao-ngu-dong-lanh",
+        "/product/cua-nau-sofima-frozen",
+        "/product/ca-hoi"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/big-thaw-safe-defrosting-methods",
+        "https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/freezing-and-food-safety"
+      ]
+    },
+    {
+      "order": 3,
+      "file": "content/drafts/03-cach-chon-tom-tuoi-ngon.md",
+      "title": "Cách chọn tôm tươi ngon theo từng loại phổ biến",
+      "slug": "cach-chon-tom-tuoi-ngon",
+      "primaryKeyword": "cách chọn tôm tươi ngon",
+      "searchIntent": "Hướng dẫn chọn mua trước khi chế biến",
+      "wordCount": 1617,
+      "excerptLength": 103,
+      "metaTitle": "Cách chọn tôm tươi ngon theo từng loại | OCSEAFOOD",
+      "metaTitleLength": 50,
+      "metaDescription": "Nhận biết tôm sú, tôm tít và tôm mũ ni tươi qua mùi, độ săn chắc, vỏ và điều kiện bảo quản, kèm checklist hỏi người bán.",
+      "metaDescriptionLength": 120,
+      "imageAlt": "Tôm sú, tôm tít và tôm mũ ni tươi đặt trên khay lạnh",
+      "cta": "Khám phá danh mục Tôm và xác nhận trạng thái của lô hàng.",
+      "internalLinks": [
+        "/category/tom",
+        "/product/tom-su",
+        "/product/tom-tit",
+        "/product/tom-mu-ni"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.fdacs.gov/Consumer-Resources/Buy-Fresh-From-Florida/Seafood-Products/Shrimp",
+        "https://www.fisheries.noaa.gov/national/sustainable-seafood/how-buy-seafood"
+      ]
+    },
+    {
+      "order": 4,
+      "file": "content/drafts/04-cach-che-bien-ca-hoi-don-gian.md",
+      "title": "Các cách chế biến cá hồi đơn giản tại nhà",
+      "slug": "cach-che-bien-ca-hoi-don-gian",
+      "primaryKeyword": "cách chế biến cá hồi đơn giản",
+      "searchIntent": "Ý tưởng và công thức nấu chín tại nhà",
+      "wordCount": 1554,
+      "excerptLength": 104,
+      "metaTitle": "4 cách chế biến cá hồi đơn giản | OCSEAFOOD",
+      "metaTitleLength": 43,
+      "metaDescription": "Bốn cách làm cá hồi áp chảo, nướng, hấp và nấu canh tại nhà, với mẹo giữ miếng cá không khô và hướng dẫn nấu chín an toàn.",
+      "metaDescriptionLength": 122,
+      "imageAlt": "Miếng cá hồi áp chảo chín đều dùng cùng rau củ tại nhà",
+      "cta": "Xem Cá Hồi và xác nhận quy cách cùng trạng thái sản phẩm.",
+      "internalLinks": [
+        "/product/ca-hoi",
+        "/category/ca",
+        "/menu"
+      ],
+      "sourceUrls": [
+        "https://www.fda.gov/food/buy-store-serve-safe-food/selecting-and-serving-fresh-and-frozen-seafood-safely",
+        "https://www.foodsafety.gov/food-safety-charts/safe-minimum-internal-temperatures",
+        "https://www.fda.gov/food/buy-store-serve-safe-food/safe-food-handling"
+      ]
+    }
+  ]
+}

@@ -85,7 +85,6 @@ describe("Admin users management page", () => {
     expect(deleteButtons[1].disabled).toBe(false);
 
     // Form inputs for creation
-    const textboxes = screen.getAllByRole("textbox") as HTMLInputElement[];
     const emailInput = screen.getByPlaceholderText("name@example.com") as HTMLInputElement;
     const nameInput = screen.getByPlaceholderText("Nguyễn Văn A") as HTMLInputElement;
     const passwordInput = screen.getByPlaceholderText("Tối thiểu 6 ký tự") as HTMLInputElement;

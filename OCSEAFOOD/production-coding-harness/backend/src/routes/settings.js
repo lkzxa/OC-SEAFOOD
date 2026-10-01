@@ -5,6 +5,15 @@ const auth = require('../middleware/auth');
 const authorize = require('../middleware/authorize');
 const { sendTelegramMessage, sendZaloMessage, createMailTransporter } = require('../workers/notificationWorker');
 const env = require('../config/env');
+const logger = require('../utils/logger');
+const { OFFICIAL_PHONE_DISPLAY, OFFICIAL_ZALO_URL } = require('../constants/contact');
+
+const SECRET_SETTING_KEYS = [
+  'TELEGRAM_BOT_TOKEN',
+  'RECRUITMENT_TELEGRAM_BOT_TOKEN',
+  'ZALO_OA_ACCESS_TOKEN',
+  'SMTP_PASS',
+];
 
 // Helper to get all settings as key-value
 async function getSettingsMap() {
@@ -34,7 +43,7 @@ router.get('/public', async (req, res, next) => {
         }
       }
     }).catch((err) => {
-      console.warn('⚠️ Database query for public settings failed. Using fallback values:', err.message);
+      logger.warn('public_settings_database_query_failed', { error: err });
       return [];
     });
     const map = {};
@@ -44,8 +53,8 @@ router.get('/public', async (req, res, next) => {
     return res.status(200).json({
       HOMEPAGE_ANNOUNCEMENT_ENABLED: map['HOMEPAGE_ANNOUNCEMENT_ENABLED'] === 'true',
       HOMEPAGE_ANNOUNCEMENT_CONTENT: map['HOMEPAGE_ANNOUNCEMENT_CONTENT'] || '',
-      CONTACT_HOTLINE: map['CONTACT_HOTLINE'] || '',
-      CONTACT_ZALO: map['CONTACT_ZALO'] || '',
+      CONTACT_HOTLINE: map['CONTACT_HOTLINE'] || OFFICIAL_PHONE_DISPLAY,
+      CONTACT_ZALO: map['CONTACT_ZALO'] || OFFICIAL_ZALO_URL,
       CONTACT_FACEBOOK: map['CONTACT_FACEBOOK'] || '',
       // Chưa cấu hình lần nào (key chưa tồn tại) → mặc định bật, giữ đúng hành vi ban đầu
       MARQUEE_ENABLED: map['MARQUEE_ENABLED'] === undefined ? true : map['MARQUEE_ENABLED'] === 'true',
@@ -61,22 +70,29 @@ router.get('/', auth, authorize('ADMIN'), async (req, res, next) => {
   try {
     const settings = await getSettingsMap();
     return res.status(200).json({
-      TELEGRAM_BOT_TOKEN: settings['TELEGRAM_BOT_TOKEN'] || '',
+      TELEGRAM_BOT_TOKEN: '',
+      TELEGRAM_BOT_TOKEN_CONFIGURED: Boolean(settings['TELEGRAM_BOT_TOKEN'] || env.TELEGRAM_BOT_TOKEN),
       TELEGRAM_CHAT_ID: settings['TELEGRAM_CHAT_ID'] || '',
-      RECRUITMENT_TELEGRAM_BOT_TOKEN: settings['RECRUITMENT_TELEGRAM_BOT_TOKEN'] || '',
-      RECRUITMENT_TELEGRAM_CHAT_ID: settings['RECRUITMENT_TELEGRAM_CHAT_ID'] || '',
-      ZALO_OA_ACCESS_TOKEN: settings['ZALO_OA_ACCESS_TOKEN'] || '',
+      RECRUITMENT_TELEGRAM_BOT_TOKEN: '',
+      RECRUITMENT_TELEGRAM_BOT_TOKEN_CONFIGURED: Boolean(
+        settings['RECRUITMENT_TELEGRAM_BOT_TOKEN'] || env.RECRUITMENT_TELEGRAM_BOT_TOKEN
+      ),
+      RECRUITMENT_TELEGRAM_CHAT_ID:
+        settings['RECRUITMENT_TELEGRAM_CHAT_ID'] || env.RECRUITMENT_TELEGRAM_CHAT_ID || '',
+      ZALO_OA_ACCESS_TOKEN: '',
+      ZALO_OA_ACCESS_TOKEN_CONFIGURED: Boolean(settings['ZALO_OA_ACCESS_TOKEN'] || env.ZALO_OA_ACCESS_TOKEN),
       ZALO_USER_ID: settings['ZALO_USER_ID'] || '',
       SMTP_HOST: settings['SMTP_HOST'] || '',
       SMTP_PORT: settings['SMTP_PORT'] || '',
       SMTP_USER: settings['SMTP_USER'] || '',
-      SMTP_PASS: settings['SMTP_PASS'] || '',
+      SMTP_PASS: '',
+      SMTP_PASS_CONFIGURED: Boolean(settings['SMTP_PASS'] || env.SMTP_PASS),
       SMTP_SECURE: settings['SMTP_SECURE'] === 'true',
       EMAIL_FROM: settings['EMAIL_FROM'] || '',
       HOMEPAGE_ANNOUNCEMENT_ENABLED: settings['HOMEPAGE_ANNOUNCEMENT_ENABLED'] === 'true',
       HOMEPAGE_ANNOUNCEMENT_CONTENT: settings['HOMEPAGE_ANNOUNCEMENT_CONTENT'] || '',
-      CONTACT_HOTLINE: settings['CONTACT_HOTLINE'] || '',
-      CONTACT_ZALO: settings['CONTACT_ZALO'] || '',
+      CONTACT_HOTLINE: settings['CONTACT_HOTLINE'] || OFFICIAL_PHONE_DISPLAY,
+      CONTACT_ZALO: settings['CONTACT_ZALO'] || OFFICIAL_ZALO_URL,
       CONTACT_FACEBOOK: settings['CONTACT_FACEBOOK'] || '',
       MARQUEE_ENABLED: settings['MARQUEE_ENABLED'] === undefined ? true : settings['MARQUEE_ENABLED'] === 'true',
       MARQUEE_CONTENT: settings['MARQUEE_CONTENT'] || '',
@@ -133,6 +149,12 @@ router.put('/', auth, authorize('ADMIN'), async (req, res, next) => {
       MARQUEE_CONTENT: MARQUEE_CONTENT || '',
     };
 
+    // A blank secret field means "keep the current secret". The Admin API never
+    // sends stored secrets back to the browser, so blank must not erase them.
+    for (const key of SECRET_SETTING_KEYS) {
+      if (!keysToSave[key] || !keysToSave[key].trim()) delete keysToSave[key];
+    }
+
     // Perform upsert inside transaction
     await prisma.$transaction(
       Object.entries(keysToSave).map(([key, value]) =>
@@ -155,8 +177,8 @@ router.post('/test-telegram', auth, authorize('ADMIN'), async (req, res, next) =
   try {
     const settings = await getSettingsMap();
     const { token: bodyToken, chatId: bodyChatId } = req.body || {};
-    const token = bodyToken || settings['TELEGRAM_BOT_TOKEN'] || process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = bodyChatId || settings['TELEGRAM_CHAT_ID'] || process.env.TELEGRAM_CHAT_ID;
+    const token = bodyToken || settings['TELEGRAM_BOT_TOKEN'] || env.TELEGRAM_BOT_TOKEN;
+    const chatId = bodyChatId || settings['TELEGRAM_CHAT_ID'] || env.TELEGRAM_CHAT_ID;
 
     if (!token || !chatId) {
       return res.status(400).json({ error: { message: 'Telegram configuration is missing', status: 400 } });
@@ -174,8 +196,8 @@ router.post('/test-recruitment-telegram', auth, authorize('ADMIN'), async (req, 
   try {
     const settings = await getSettingsMap();
     const { token: bodyToken, chatId: bodyChatId } = req.body || {};
-    const token = bodyToken || settings['RECRUITMENT_TELEGRAM_BOT_TOKEN'] || process.env.RECRUITMENT_TELEGRAM_BOT_TOKEN;
-    const chatId = bodyChatId || settings['RECRUITMENT_TELEGRAM_CHAT_ID'] || process.env.RECRUITMENT_TELEGRAM_CHAT_ID;
+    const token = bodyToken || settings['RECRUITMENT_TELEGRAM_BOT_TOKEN'] || env.RECRUITMENT_TELEGRAM_BOT_TOKEN;
+    const chatId = bodyChatId || settings['RECRUITMENT_TELEGRAM_CHAT_ID'] || env.RECRUITMENT_TELEGRAM_CHAT_ID;
 
     if (!token || !chatId) {
       return res.status(400).json({ error: { message: 'Recruitment Telegram configuration is missing', status: 400 } });
@@ -193,8 +215,8 @@ router.post('/test-zalo', auth, authorize('ADMIN'), async (req, res, next) => {
   try {
     const settings = await getSettingsMap();
     const { accessToken: bodyAccessToken, userId: bodyUserId } = req.body || {};
-    const accessToken = bodyAccessToken || settings['ZALO_OA_ACCESS_TOKEN'] || process.env.ZALO_OA_ACCESS_TOKEN;
-    const userId = bodyUserId || settings['ZALO_USER_ID'] || process.env.ZALO_USER_ID;
+    const accessToken = bodyAccessToken || settings['ZALO_OA_ACCESS_TOKEN'] || env.ZALO_OA_ACCESS_TOKEN;
+    const userId = bodyUserId || settings['ZALO_USER_ID'] || env.ZALO_USER_ID;
 
     if (!accessToken || !userId) {
       return res.status(400).json({ error: { message: 'Zalo configuration is missing', status: 400 } });

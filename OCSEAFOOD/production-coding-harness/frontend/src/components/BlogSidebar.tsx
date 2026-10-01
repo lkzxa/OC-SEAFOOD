@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { optimizeImageUrl } from "@/utils/cloudinaryImage";
+import { OFFICIAL_PHONE_DISPLAY, OFFICIAL_PHONE_TEL } from "@/constants/contact";
 
 interface BlogPost {
   id: number;
@@ -61,11 +63,11 @@ export default function BlogSidebar({ excludeId }: BlogSidebarProps) {
           Gọi ngay để được tư vấn chọn hải sản hoặc combo tiệc phù hợp.
         </p>
         <a
-          href="tel:0908464818"
-          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-extrabold py-2.5 rounded-lg text-xs uppercase tracking-widest transition-colors"
+          href={OFFICIAL_PHONE_TEL}
+          className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-navy-950 font-extrabold py-2.5 rounded-lg text-xs uppercase tracking-widest transition-colors"
         >
           <span className="material-symbols-outlined text-sm select-none">call</span>
-          0908 464 818
+          {OFFICIAL_PHONE_DISPLAY}
         </a>
         <Link
           href="/combo"
@@ -84,13 +86,13 @@ export default function BlogSidebar({ excludeId }: BlogSidebarProps) {
           <div className="space-y-4">
             {posts.map((p) => (
               <Link key={p.id} href={`/blog/${p.id}`} className="flex gap-3 group">
-                <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-navy-900">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                <div className="relative w-16 h-16 shrink-0 rounded-md overflow-hidden bg-navy-900">
+                  <Image
                     alt={p.imageAlt || p.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                    src={optimizeImageUrl(p.image, 150) || "https://images.unsplash.com/photo-1534080391025-09795d197a5b?w=200"}
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    sizes="64px"
+                    src={optimizeImageUrl(p.image, 150) || "/media-placeholder.svg"}
                   />
                 </div>
                 <div className="min-w-0">

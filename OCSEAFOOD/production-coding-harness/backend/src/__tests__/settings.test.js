@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('../app');
 const prisma = require('../config/prisma');
+const env = require('../config/env');
 const { signToken } = require('../utils/jwt');
 const { sendTelegramMessage, sendZaloMessage } = require('../workers/notificationWorker');
 
@@ -84,12 +85,23 @@ describe('System Settings API - /settings', () => {
         HOMEPAGE_ANNOUNCEMENT_ENABLED: true,
         HOMEPAGE_ANNOUNCEMENT_CONTENT: 'Voucher 30%',
         CONTACT_HOTLINE: '0901234567',
-        CONTACT_ZALO: '',
+        CONTACT_ZALO: 'https://zalo.me/0908464818',
         CONTACT_FACEBOOK: '',
         MARQUEE_ENABLED: true,
         MARQUEE_CONTENT: '',
       });
       expect(prisma.systemSetting.findMany).toHaveBeenCalled();
+    });
+
+    it('returns the official contact defaults when the database has no contact settings', async () => {
+      prisma.systemSetting.findMany.mockResolvedValue([]);
+
+      const res = await request(app)
+        .get('/settings/public')
+        .expect(200);
+
+      expect(res.body.CONTACT_HOTLINE).toBe('0908 464 818');
+      expect(res.body.CONTACT_ZALO).toBe('https://zalo.me/0908464818');
     });
   });
 
@@ -108,27 +120,55 @@ describe('System Settings API - /settings', () => {
         .expect(200);
 
       expect(res.body).toEqual({
-        TELEGRAM_BOT_TOKEN: 'token-xyz',
+        TELEGRAM_BOT_TOKEN: '',
+        TELEGRAM_BOT_TOKEN_CONFIGURED: true,
         TELEGRAM_CHAT_ID: 'chat-123',
         RECRUITMENT_TELEGRAM_BOT_TOKEN: '',
+        RECRUITMENT_TELEGRAM_BOT_TOKEN_CONFIGURED: false,
         RECRUITMENT_TELEGRAM_CHAT_ID: '',
         ZALO_OA_ACCESS_TOKEN: '',
+        ZALO_OA_ACCESS_TOKEN_CONFIGURED: false,
         ZALO_USER_ID: '',
         SMTP_HOST: '',
         SMTP_PORT: '',
         SMTP_USER: '',
         SMTP_PASS: '',
+        SMTP_PASS_CONFIGURED: false,
         SMTP_SECURE: false,
         EMAIL_FROM: '',
         HOMEPAGE_ANNOUNCEMENT_ENABLED: true,
         HOMEPAGE_ANNOUNCEMENT_CONTENT: 'Voucher 30%',
-        CONTACT_HOTLINE: '',
-        CONTACT_ZALO: '',
+        CONTACT_HOTLINE: '0908 464 818',
+        CONTACT_ZALO: 'https://zalo.me/0908464818',
         CONTACT_FACEBOOK: '',
         MARQUEE_ENABLED: true,
         MARQUEE_CONTENT: '',
       });
       expect(prisma.systemSetting.findMany).toHaveBeenCalled();
+      expect(JSON.stringify(res.body)).not.toContain('token-xyz');
+    });
+
+    it('reports recruitment Telegram fallback from validated environment config', async () => {
+      const originalToken = env.RECRUITMENT_TELEGRAM_BOT_TOKEN;
+      const originalChatId = env.RECRUITMENT_TELEGRAM_CHAT_ID;
+      env.RECRUITMENT_TELEGRAM_BOT_TOKEN = 'environment-recruitment-token';
+      env.RECRUITMENT_TELEGRAM_CHAT_ID = 'environment-recruitment-chat';
+      prisma.systemSetting.findMany.mockResolvedValue([]);
+
+      try {
+        const res = await request(app)
+          .get('/settings')
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200);
+
+        expect(res.body.RECRUITMENT_TELEGRAM_BOT_TOKEN).toBe('');
+        expect(res.body.RECRUITMENT_TELEGRAM_BOT_TOKEN_CONFIGURED).toBe(true);
+        expect(res.body.RECRUITMENT_TELEGRAM_CHAT_ID).toBe('environment-recruitment-chat');
+        expect(JSON.stringify(res.body)).not.toContain('environment-recruitment-token');
+      } finally {
+        env.RECRUITMENT_TELEGRAM_BOT_TOKEN = originalToken;
+        env.RECRUITMENT_TELEGRAM_CHAT_ID = originalChatId;
+      }
     });
   });
 
@@ -154,7 +194,7 @@ describe('System Settings API - /settings', () => {
         .send(payload)
         .expect(200);
 
-      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(19);
+      expect(prisma.systemSetting.upsert).toHaveBeenCalledTimes(18);
       expect(prisma.systemSetting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { key: 'TELEGRAM_BOT_TOKEN' },
@@ -183,6 +223,23 @@ describe('System Settings API - /settings', () => {
           update: { value: '0901234567' },
         })
       );
+    });
+
+    it('preserves saved secrets when the browser submits blank fields', async () => {
+      await request(app)
+        .put('/settings')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          TELEGRAM_BOT_TOKEN: '',
+          RECRUITMENT_TELEGRAM_BOT_TOKEN: '',
+          ZALO_OA_ACCESS_TOKEN: '',
+          SMTP_PASS: '',
+        })
+        .expect(200);
+
+      for (const secretKey of ['TELEGRAM_BOT_TOKEN', 'RECRUITMENT_TELEGRAM_BOT_TOKEN', 'ZALO_OA_ACCESS_TOKEN', 'SMTP_PASS']) {
+        expect(prisma.systemSetting.upsert).not.toHaveBeenCalledWith(expect.objectContaining({ where: { key: secretKey } }));
+      }
     });
   });
 

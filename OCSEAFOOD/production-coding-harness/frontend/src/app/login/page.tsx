@@ -2,12 +2,13 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { useAuthStore } from "@/store/useAuthStore";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, setAuth } = useAuthStore();
+  const { user, sessionReady, setAuth } = useAuthStore();
 
   // Tab state: 'login' | 'register' | 'forgot-password'
   const [activeTab, setActiveTab] = useState<"login" | "register" | "forgot-password">("login");
@@ -44,11 +45,11 @@ function LoginContent() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (sessionReady && user) {
       const redirectUrl = searchParams?.get("redirect") || (user.role === "ADMIN" ? "/admin" : "/");
       router.push(redirectUrl);
     }
-  }, [user, router, searchParams]);
+  }, [sessionReady, user, router, searchParams]);
 
   // Google OAuth callback handler
   useEffect(() => {
@@ -56,7 +57,7 @@ function LoginContent() {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
 
-    if (code && state === "google") {
+    if (code) {
       const handleGoogleCallback = async () => {
         setLoading(true);
         setErrorMsg(null);
@@ -66,7 +67,7 @@ function LoginContent() {
           const res = await fetch("/api/auth/google", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({ code, state }),
           });
 
           const data = await res.json();
@@ -75,7 +76,7 @@ function LoginContent() {
           }
 
           setSuccessMsg("Đăng nhập bằng Google thành công!");
-          setAuth(data.token, data.user);
+          setAuth(null, data.user);
           router.replace("/login");
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : "Đăng nhập Google thất bại.";
@@ -91,7 +92,7 @@ function LoginContent() {
     }
   }, [searchParams, router, setAuth]);
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
@@ -103,11 +104,22 @@ function LoginContent() {
       return;
     }
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&response_type=code&scope=openid%20email%20profile&state=google`;
+    setLoading(true);
+    try {
+      const stateResponse = await fetch("/api/auth/google/state", { method: "POST" });
+      const stateData = await stateResponse.json();
+      if (!stateResponse.ok || !stateData.state) {
+        throw new Error(stateData?.error?.message || "Không thể bắt đầu đăng nhập Google.");
+      }
 
-    window.location.href = authUrl;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+        redirectUri
+      )}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(stateData.state)}`;
+      window.location.assign(authUrl);
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Không thể bắt đầu đăng nhập Google.");
+      setLoading(false);
+    }
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -125,7 +137,7 @@ function LoginContent() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
       const data = await res.json();
@@ -134,8 +146,7 @@ function LoginContent() {
       }
 
       setSuccessMsg("Đăng nhập thành công!");
-      // BUG-018 fix: pass rememberMe flag — cookie lasts 30 days if checked, else session only
-      setAuth(data.token, data.user, rememberMe ? 30 : 0);
+      setAuth(null, data.user);
 
       // Redirect handled by useEffect
     } catch (err: unknown) {
@@ -205,7 +216,7 @@ function LoginContent() {
 
       const loginData = await loginRes.json();
       if (loginRes.ok) {
-        setAuth(loginData.token, loginData.user);
+        setAuth(null, loginData.user);
       } else {
         // Fallback if autologin fails: switch to login tab
         Promise.resolve().then(() => setActiveTab("login"));
@@ -257,10 +268,12 @@ function LoginContent() {
         {/* Left side: Premium Image Banner */}
         <div className="hidden md:flex md:flex-col md:w-1/2 min-h-[600px] overflow-hidden bg-navy-900">
           {/* Logo area — plain navy background, no overlay tint */}
-          <div className="flex-1 flex items-center justify-center p-16">
-            <img
+          <div className="relative flex-1 flex items-center justify-center m-16">
+            <Image
               alt="ỐC SEAFOOD Logo"
-              className="w-full h-full object-contain hover:scale-105 transition-transform duration-700"
+              className="object-contain hover:scale-105 transition-transform duration-700"
+              fill
+              sizes="50vw"
               src="/logo_chuan.png"
             />
           </div>
@@ -412,7 +425,7 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+                className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
               >
                 {loading ? "Đang xử lý..." : "ĐĂNG NHẬP NGAY"}
               </button>
@@ -488,7 +501,7 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+                className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
               >
                 {loading ? "Đang xử lý..." : "GỬI LIÊN KẾT ĐẶT LẠI"}
               </button>
@@ -626,7 +639,7 @@ function LoginContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm mt-4"
+                className="w-full bg-orange-500 hover:bg-orange-400 text-navy-950 font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/10 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm mt-4"
               >
                 {loading ? "Đang xử lý..." : "TẠO TÀI KHOẢN MỚI"}
               </button>

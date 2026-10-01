@@ -4,10 +4,11 @@ const env = require('../config/env');
 /**
  * Sign a new JWT token
  * @param {object} payload - The token payload (e.g. { id, email, role })
+ * @param {string} expiresIn - JWT lifetime accepted by jsonwebtoken
  * @returns {string} The signed JWT token
  */
-const signToken = (payload) => {
-  return jwt.sign(payload, env.JWT_SECRET, { expiresIn: '1d' });
+const signToken = (payload, expiresIn = '1d') => {
+  return jwt.sign(payload, env.JWT_SECRET, { expiresIn });
 };
 
 /**

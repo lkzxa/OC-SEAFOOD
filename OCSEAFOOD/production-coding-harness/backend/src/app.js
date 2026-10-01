@@ -1,9 +1,9 @@
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const { z } = require('zod');
 const errorHandler = require('./middleware/errorHandler');
+const requestLogger = require('./middleware/requestLogger');
 const auth = require('./middleware/auth');
 const authorize = require('./middleware/authorize');
 const { validateBody } = require('./middleware/validate');
@@ -21,26 +21,31 @@ const usersRoutes = require('./routes/users');
 const recruitmentRoutes = require('./routes/recruitment');
 const jobOpeningRoutes = require('./routes/jobOpenings');
 const uploadRoutes = require('./routes/upload');
+const healthRoutes = require('./routes/health');
+const { validateMediaConfiguration } = require('./config/media');
+const { getAllowedOrigins } = require('./config/cors');
 const app = express();
+const { mediaRoot } = validateMediaConfiguration();
 
-// Render/Vercel sit behind a reverse proxy — without this, req.ip collapses to the
-// proxy's IP for every visitor, causing rate limiters to share one bucket across all users.
+// Production runs behind one trusted reverse proxy. This preserves the client IP
+// used by rate limiters without trusting arbitrary forwarded-hop values.
 app.set('trust proxy', 1);
 
 app.use(helmet());
+app.use(requestLogger);
 
 // BUG-016 fix: CORS configuration
 // Set CORS_ORIGIN env var to a comma-separated list of allowed origins in production
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',')
-  : ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = getAllowedOrigins();
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (e.g. server-side, curl, Postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS policy: origin '${origin}' not allowed`));
+    const error = new Error('CORS policy: origin not allowed');
+    error.status = 403;
+    callback(error);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -62,14 +67,14 @@ app.use('/users', usersRoutes);
 app.use('/recruitment', recruitmentRoutes);
 app.use('/job-openings', jobOpeningRoutes);
 app.use('/upload', uploadRoutes);
+app.use('/health', healthRoutes);
 
 // Phục vụ thư mục uploads ra public
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+app.use('/uploads', express.static(mediaRoot, {
+  fallthrough: false,
+  immutable: true,
+  maxAge: '7d',
+}));
 
 // BUG-L03 fix: Debug/test endpoints only available in non-production environments
 if (process.env.NODE_ENV !== 'production') {
@@ -115,6 +120,16 @@ if (process.env.NODE_ENV !== 'production') {
     res.status(200).json({ status: 'success', message: 'Checkout endpoint reached' });
   });
 }
+
+// Keep unmatched API routes machine-readable and consistent with known 404s.
+app.use((req, res) => {
+  res.status(404).json({
+    error: {
+      message: 'Resource not found',
+      status: 404,
+    },
+  });
+});
 
 // Centralized error handler (must be registered last)
 app.use(errorHandler);

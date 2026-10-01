@@ -20,15 +20,14 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// GET /posts/:id - Public detail (only visible posts)
-router.get('/:id', async (req, res, next) => {
+// GET /posts/:identifier - Public detail by numeric ID or stable slug (only visible posts)
+router.get('/:identifier', async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: { message: 'Invalid ID format', status: 400 } });
-    }
+    const identifier = req.params.identifier;
+    const isNumericId = /^\d+$/.test(identifier);
+    const identity = isNumericId ? { id: Number(identifier) } : { slug: identifier };
     const item = await prisma.blogPost.findFirst({
-      where: { id, isVisible: true }
+      where: { ...identity, isVisible: true }
     });
     if (!item) {
       return res.status(404).json({ error: { message: 'Blog post not found', status: 404 } });

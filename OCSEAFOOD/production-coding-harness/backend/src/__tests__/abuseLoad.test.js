@@ -40,6 +40,7 @@ jest.mock('../middleware/rateLimiter', () => {
 
 // Mock Prisma so tests don't require a live DB connection
 jest.mock('../config/prisma', () => ({
+  $queryRawUnsafe: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
   product: {
     findMany: jest.fn(),
     count: jest.fn().mockResolvedValue(0),

@@ -64,7 +64,7 @@ describe("Admin orders page", () => {
                 ward: "Phường Võ Thị Sáu",
                 streetAddress: "10 Nguyễn Đình Chiểu",
                 status: "PENDING",
-                totalFinal: 1200000,
+                totalFinal: 1312500,
                 createdAt: "2026-06-11T07:00:00.000Z",
                 orderItems: [
                   {
@@ -73,8 +73,8 @@ describe("Admin orders page", () => {
                     productName: "Tôm Hùm",
                     productUnit: "con",
                     quantity: 1,
-                    priceFinal: 1200000,
-                    totalFinal: 1200000,
+                    priceFinal: 1312500,
+                    totalFinal: 1312500,
                   },
                 ],
               },
@@ -176,7 +176,7 @@ describe("Admin orders page", () => {
                 streetAddress: "10 Nguyễn Đình Chiểu",
                 note: null,
                 status: "PENDING",
-                totalFinal: 1200000,
+                totalFinal: 1312500,
                 createdAt: "2026-06-11T07:00:00.000Z",
                 orderItems: [
                   {
@@ -185,8 +185,8 @@ describe("Admin orders page", () => {
                     productName: "Tôm Hùm",
                     productUnit: "con",
                     quantity: 1,
-                    priceFinal: 1200000,
-                    totalFinal: 1200000,
+                    priceFinal: 1312500,
+                    totalFinal: 1312500,
                   },
                 ],
               },
@@ -217,8 +217,9 @@ describe("Admin orders page", () => {
 
     const quantityInputs = screen.getAllByLabelText("Số lượng") as HTMLInputElement[];
     const priceInputs = screen.getAllByLabelText("Đơn giá cuối") as HTMLInputElement[];
+    expect(priceInputs[0].value).toBe("1312500");
+    expect(priceInputs[0].step).toBe("1");
     fireEvent.change(quantityInputs[0], { target: { value: "2" } });
-    fireEvent.change(priceInputs[0], { target: { value: "1500000" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi đơn hàng" }));
 

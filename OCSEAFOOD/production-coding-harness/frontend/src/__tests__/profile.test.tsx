@@ -75,12 +75,29 @@ describe("Customer profile page", () => {
       ],
       createdAt: "2026-06-11T12:00:00.000Z",
     });
+    const pendingOrder = useOrderHistoryStore.getState().orders[0];
+    useOrderHistoryStore.getState().addOrder({
+      ...pendingOrder,
+      id: 43,
+      code: "ORD-CONFIRMED",
+      status: "CONFIRMED",
+      createdAt: "2026-06-11T13:00:00.000Z",
+    });
+    useOrderHistoryStore.getState().addOrder({
+      ...pendingOrder,
+      id: 44,
+      code: "ORD-CANCELLED",
+      status: "CANCELLED",
+      createdAt: "2026-06-11T14:00:00.000Z",
+    });
 
     render(<ProfilePage />);
 
     expect(screen.getByText("ORD-ABC123")).not.toBeNull();
-    expect(screen.getByText("Tôm Hùm")).not.toBeNull();
+    expect(screen.getAllByText("Tôm Hùm")).toHaveLength(3);
     expect(screen.getByText("Chờ tư vấn")).not.toBeNull();
-    expect(screen.getByText(/10 Ben Nghe/)).not.toBeNull();
+    expect(screen.getByText("Đã xác nhận")).not.toBeNull();
+    expect(screen.getByText("Đã hủy")).not.toBeNull();
+    expect(screen.getAllByText(/10 Ben Nghe/)).toHaveLength(3);
   });
 });
